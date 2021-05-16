@@ -1,0 +1,46 @@
+- platform: template
+  sensors:
+    musikk_godehol:
+      friendly_name: "Musikk på Godehol"
+      value_template: >-
+        {{ is_state('media_player.godehol', 'playing') or is_state('media_player.godehol', 'paused') }}
+    musikk_kontor:
+      friendly_name: "Musikk på kontoret"
+      value_template: >-
+        {{ is_state('media_player.kontoret', 'playing') or is_state('media_player.kontoret', 'paused') }}
+    musikk_kjokkennest:
+      friendly_name: "Musikk på KjøkkenNest"
+      value_template: >-
+        {{ is_state('media_player.kjokkennest', 'playing') or is_state('media_player.kjokkennest', 'paused') }}
+    musikk_badet:
+      friendly_name: "Musikk på Badet"
+      value_template: >-
+        {{ is_state('media_player.badet', 'playing') or is_state('media_player.badet', 'paused') }}
+    musikk_fm:
+      friendly_name: "Musikk på FM"
+      value_template: >-
+        {{ is_state('media_player.fm', 'playing') or is_state('media_player.fm', 'paused') }}
+    musikk_kjokken:
+      friendly_name: "Musikk på Kjøkkenet"
+      value_template: >-
+        {{ is_state('media_player.kjokkenet', 'playing') or is_state('media_player.kjokkenet', 'paused') }}
+    musikk_bare_kontor:
+      friendly_name: "Musikk bare på kontoret"
+      value_template: >-
+        {{ is_state('binary_sensor.musikk_kontor', 'on') and not is_state('binary_sensor.musikk_godehol', 'on') }}
+    musikk_bare_kjokkennest:
+      friendly_name: "Musikk bare på KjøkkenNest"
+      value_template: >-
+        {{ is_state('binary_sensor.musikk_kjokkennest', 'on') and not is_state('binary_sensor.musikk_godehol', 'on') }}
+    musikk_bare_badet:
+      friendly_name: "Musikk bare på Badet"
+      value_template: >-
+        {{ is_state('binary_sensor.musikk_badet', 'on') and not is_state('binary_sensor.musikk_godehol', 'on') }}
+    musikk_bare_fm:
+      friendly_name: "Musikk bare på FM"
+      value_template: >-
+        {{ is_state('binary_sensor.musikk_fm', 'on') and not is_state('binary_sensor.musikk_godehol', 'on') }}
+    musikk_bare_kjokken:
+      friendly_name: "Musikk bare på Kjøkkenet"
+      value_template: >-
+        {{ is_state('binary_sensor.musikk_kjokken', 'on') and not is_state('binary_sensor.musikk_godehol', 'on') }}

@@ -1,0 +1,42 @@
+# See https://cumuluswiki.org/a/Webtags for valid tags that can be put into config in cumulus
+# - platform: mqtt
+#   name: 'Weather: Wind direction'
+#   state_topic: 'CumulusMX/DataUpdate'
+#   unit_of_measurement: '°'
+#   value_template: '{{ value_json[''winddir''] }}'
+# - platform: mqtt
+#   name: 'Weather: Beaufort Name'
+#   state_topic: 'CumulusMX/DataUpdate'
+#   value_template: '{{ value_json[''beaufort.name''] }}'
+# - platform: mqtt
+#   name: 'Weather: Windrose data'
+#   state_topic: 'CumulusMX/Interval'
+#   value_template: '{{ value_json[''WindRoseData''] }}'
+# - platform: mqtt
+#   name: 'Weather: Average wind direction'
+#   state_topic: 'CumulusMX/Interval'
+#   unit_of_measurement: '°'
+#   value_template: '{{ value_json[''wind.direction.avg''] }}'
+# - platform: mqtt
+#   name: 'Weather: Temperature outside'
+#   state_topic: 'CumulusMX/Interval'
+#   unit_of_measurement: '°C'
+#   value_template: '{{ value_json[''temperature.outside''] }}'
+- platform: mqtt
+  name: 'Weather: Latest interval data update'
+  state_topic: 'CumulusMX/Interval'
+  value_template: '{{ value_json[''time''] }}'
+  json_attributes_topic: 'CumulusMX/Interval'
+  json_attributes_template: '{{ value_json[''Weather''] | tojson }}'
+- platform: mqtt
+  name: 'Weather: Latest current data update'
+  state_topic: 'CumulusMX/DataUpdate'
+  value_template: '{{ value_json[''time''] }}'
+  json_attributes_topic: 'CumulusMX/DataUpdate'
+  json_attributes_template: '{{ value_json | tojson }}'
+- platform: mqtt
+  name: 'Weather: GramatusServer system info'
+  state_topic: 'CumulusMX/Interval'
+  value_template: 'version {{ value_json[''System''][''version''] }}, build {{ value_json[''System''][''build''] }}'
+  json_attributes_topic: 'CumulusMX/Interval'
+  json_attributes_template: '{{ value_json[''System''] | tojson }}'

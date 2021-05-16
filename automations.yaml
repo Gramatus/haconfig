@@ -1,0 +1,163 @@
+- id: '1618669616464'
+  alias: Start Nabu Casa on startup
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  condition: []
+  action:
+  - service: cloud.remote_connect
+  mode: single
+- id: '1618682640574'
+  alias: Tving HA med bryter
+  description: ''
+  trigger:
+  - platform: event
+    event_type: roku_command
+    event_data:
+      source_name: Home Assistant Pi
+      type: keypress
+      key: InstantReplay
+  condition: []
+  action:
+  - service: script.restart_skjerm_kjokken
+  mode: single
+- id: '1618682690989'
+  alias: Start HA med bryter
+  description: ''
+  trigger:
+  - platform: event
+    event_type: roku_command
+    event_data:
+      source_name: Home Assistant Pi
+      type: keypress
+      key: Home
+  condition: []
+  action:
+  - service: script.trigger_view
+  mode: single
+- id: '1618754582616'
+  alias: Keep hub on correct activity
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: remote.harmony_hub
+    attribute: current_activity
+  condition:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: remote.harmony_hub
+      state: Home Assistant
+      attribute: current_activity
+  action:
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  - type: turn_on
+    device_id: cadbb5e03d5e544232dc2898cfb9360c
+    entity_id: switch.harmony_hub_home_assistant
+    domain: switch
+  mode: single
+- id: '1618761509148'
+  alias: Start/stopp Spotify
+  description: ''
+  trigger:
+  - platform: event
+    event_type: roku_command
+    event_data:
+      source_name: Home Assistant Pi
+      type: keypress
+      key: Play
+  condition: []
+  action:
+  - service: media_player.media_play_pause
+    target:
+      entity_id: media_player.spotify_gramatus
+  mode: single
+- id: '1618847001623'
+  alias: 'Musikk: Neste'
+  description: ''
+  trigger:
+  - platform: event
+    event_type: roku_command
+    event_data:
+      source_name: Home Assistant Pi
+      type: keypress
+      key: Right
+  condition: []
+  action:
+  - service: media_player.media_next_track
+    target:
+      entity_id: media_player.spotify_gramatus
+  mode: single
+- id: '1618847054162'
+  alias: 'Musikk: Forrige'
+  description: ''
+  trigger:
+  - platform: event
+    event_type: roku_command
+    event_data:
+      source_name: Home Assistant Pi
+      type: keypress
+      key: Left
+  condition: []
+  action:
+  - service: media_player.media_previous_track
+    target:
+      entity_id: media_player.spotify_gramatus
+  mode: single
+- id: '1619900466372'
+  alias: Nattlys 15 min
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: timer.natt_nedtelling
+    to: active
+  condition:
+  - condition: state
+    entity_id: input_select.nattlys_varighet
+    state: 15 min
+  action:
+  - service: pyscript.turn_on_scene
+    data:
+      scene_id: Y2qG5PtH6AC7b1j
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - service: pyscript.turn_on_scene
+    data:
+      scene_id: xyJCA3wUDhukb-w
+  - delay:
+      hours: 0
+      minutes: 9
+      seconds: 50
+      milliseconds: 0
+  - service: light.turn_on
+    target:
+      entity_id: light.c_hue_go_soverom_1
+    data:
+      transition: 300
+      brightness: 1
+  - service: light.turn_on
+    target:
+      entity_id: light.c_hue_go_soverom_2
+    data:
+      transition: 300
+      brightness: 1
+  - delay:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  - service: light.turn_off
+    target:
+      entity_id: light.c_hue_go_soverom_1
+  - service: light.turn_off
+    target:
+      entity_id: light.c_hue_go_soverom_2
+  mode: restart

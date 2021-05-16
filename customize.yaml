@@ -1,0 +1,5 @@
+# input_text.test1:
+#   entity_picture: /media/local/Grafer.jpg
+person.Torgeir:
+  entity_picture: /local/Torgeir.jpg
+  # icon: mdi:home

@@ -1,0 +1,5 @@
+assistant_relay_test:
+  url: http://192.168.1.185:3000/assistant
+  method: POST
+  content_type: 'application/json'
+  payload: '{"command":"Play music", "user":"Torgeir"}'

@@ -1,0 +1,109 @@
+restart_skjerm_kjokken:
+  alias: Restart skjerm kjøkken
+  sequence:
+  - service: media_player.turn_off
+    target:
+      entity_id: media_player.kjokkennest
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 2
+      milliseconds: 0
+  - data:
+      entity_id: media_player.kjokkennest
+      dashboard_path: kjokken-ga
+      view_path: default_view
+    service: cast.show_lovelace_view
+  mode: single
+trigger_view:
+  alias: Trigger view
+  sequence:
+  - data:
+      entity_id: media_player.kjokkennest
+      dashboard_path: kjokken-ga
+      view_path: default_view
+    service: cast.show_lovelace_view
+  mode: single
+spill_musikk:
+  alias: Spill musikk
+  description: Spill musikk
+  fields:
+    playlist:
+      description: Url of playlist
+      example: https://open.spotify.com/playlist/0C2U8SFwZ3Y9bBjVa2KSMx?si=p8Bt3yboTc6uLtMkdJK9og
+  sequence:
+  - service: media_player.shuffle_set
+    target:
+      entity_id: media_player.spotify_gramatus
+    data:
+      shuffle: true
+  - service: media_player.play_media
+    target:
+      entity_id: media_player.spotify_gramatus
+    data:
+      media_content_id: '{{ playlist }}'
+      media_content_type: playlist
+  mode: single
+spill_musikk_2:
+  alias: Spill musikk 2
+  fields:
+    entity_id:
+      description: Entity
+      example: media_player.kontoret
+  sequence:
+  - service: spotcast.start
+    data:
+      entity_id: '{{ entity_id }}'
+  mode: single
+spill_spilleliste:
+  alias: Spill Spotify spilleliste
+  fields:
+    playlistid:
+      description: ID of playlist
+      example: 5Oma1LSh6prFDhbVmYXrXy
+  sequence:
+  - service: spotcast.start
+    data:
+      uri: spotify:playlist:'{{ playlistid }}'
+  mode: single
+leselys_15min:
+  alias: Leselys 15min
+  sequence:
+  - service: timer.start
+    data:
+      duration: 00:15:00
+    target:
+      entity_id: timer.natt_nedtelling
+  - service: input_select.select_option
+    target:
+      entity_id: input_select.nattlys_varighet
+    data:
+      option: 15 min
+  mode: restart
+leselys_30min:
+  alias: Leselys 30min
+  sequence:
+  - service: timer.start
+    data:
+      duration: 00:30:00
+    target:
+      entity_id: timer.natt_nedtelling
+  - service: input_select.select_option
+    data:
+      option: 30 min
+    target:
+      entity_id: input_select.nattlys_varighet
+  mode: restart
+leselys_av:
+  alias: Leselys av
+  sequence:
+  - service: timer.finish
+    target:
+      entity_id: timer.natt_nedtelling
+  - service: light.turn_off
+    target:
+      entity_id: light.c_hue_go_soverom_1
+  - service: light.turn_off
+    target:
+      entity_id: light.c_hue_go_soverom_2
+  mode: single

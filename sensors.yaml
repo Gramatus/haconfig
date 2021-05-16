@@ -1,0 +1,47 @@
+- platform: spotcast
+- platform: uptime
+  name: Oppetid HA
+- platform: time_date
+  display_options:
+    - 'time'
+    - 'date'
+    - 'date_time'
+    - 'date_time_utc'
+    - 'date_time_iso'
+    - 'time_date'
+    - 'time_utc'
+    - 'beat'
+- platform: tellstick
+  temperature_scale: "°C"
+  # datatype_mask: 1
+  only_named:
+    - id: 34
+      name: Kontoret
+    - id: 112
+      name: Stua
+    - id: 21
+      name: Ute
+    - id: 83
+      name: Kjøkkenet
+- platform: template
+  sensors:
+      time_formatted:
+          friendly_name: "Date and time"
+          value_template: "{{ as_timestamp(states('sensor.date_time_iso')) | timestamp_custom('%A %B %-m, %I:%M %p') }}"
+          icon_template: mdi:calendar-clock
+      # This can hopefully be used to set entity for my "playlist"-card based on what is currently active?
+      playing_entity:
+          friendly_name: "Currently active media player"
+          value_template: >-
+            {% set defaultEntity = "media_player.kjokkenet" %}
+            {% set inGroup = ['media_player.badet' , 'media_player.fm', 'media_player.kjokkenet', 'media_player.kontoret'] %}
+            {% set playState = "playing" %}
+            {% set group_state = states("media_player.Godehol") %}
+            {% set playingEntity = "" %}
+            {% set spotifySource = state_attr("media_player.spotify_gramatus","source") %}
+            {% for mediaPlayer in states.media_player %}
+              {% if state_attr(mediaPlayer.entity_id,"friendly_name") == spotifySource %}
+                {% set playingEntity = mediaPlayer.entity_id %}
+                {{ mediaPlayer.entity_id }}
+              {% endif %}
+            {% endfor %}

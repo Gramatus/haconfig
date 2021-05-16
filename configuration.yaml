@@ -1,0 +1,78 @@
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+homeassistant:
+  customize: !include customize.yaml
+  auth_mfa_modules:
+    - type: totp
+
+http:
+  server_port: 8123
+  #cors_allowed_origins:
+  #  - https://google.com
+  #  - https://www.home-assistant.io
+  ip_ban_enabled: true
+  login_attempts_threshold: 10
+    
+# Text to speech
+tts:
+  - platform: google_translate
+    service_name: google_translate_say
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+frontend:
+  themes: !include themes.yaml
+
+tradfri:
+  host: 192.168.50.53
+
+ifttt:
+  key: !secret ifttt_key
+
+spotify:
+  client_id: !secret spotify_client_id
+  client_secret: !secret spotify_client_secret
+
+rest_command: !include rest.yaml
+
+spotcast:
+  sp_dc: !secret sp_dc
+  sp_key: !secret sp_key
+
+pyscript:
+  fullypwd: !secret fullypwd
+
+tellstick:
+  host: core-tellstick
+  port: [50800, 50801]
+
+sensor: !include sensors.yaml
+sensor weather: !include weather.yaml
+
+binary_sensor: !include binary_sensors.yaml
+
+logger:
+  default: info
+  logs:
+    homeassistant.setup: warn
+    homeassistant.components.binary_sensor: warn
+    homeassistant.components.sensor: warn
+    homeassistant.components.media_player: warn
+    homeassistant.components.cast: warn
+    homeassistant.components.cast.media_player: warn
+    custom_components.spotcast: warn
+    homeassistant.components.auth: debug
+    homeassistant.components.http.ban: debug
+    #homeassistant.components.zeroconf: debug
+    #pychromecast: debug
+  #filters:
+    # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
+    # Login from localhost is probably nabu casa
+    #homeassistant.components.http.ban:
+      #- 'Login attempt or request with invalid authentication from localhost \(127\.0\.0\.1\).*8051_EEA' # Don't log if from NABU CASA and 0851_EEA (one of my tablets)
+      #- 'Login attempt or request with invalid authentication from localhost \(127\.0\.0\.1\).*SM-G781B' # Don't log if from NABU CASA and SM-G781B (my cellphone)
+      #- 'Login attempt or request with invalid authentication from Torgeir \(192\.168\.50\.100\)' # Don't log if from my laptop

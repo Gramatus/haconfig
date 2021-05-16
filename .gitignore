@@ -1,0 +1,14 @@
+home-assistant_v2.db*
+secrets.yaml
+pyscript/
+.cloud/
+.storage/
+deps/
+python_scripts/
+tts/
+www/
+.HA_VERSION
+harmony*.conf
+*.log
+custom_components/hacs
+custom_components/pyscript
