@@ -1,0 +1,181 @@
+type: horizontal-stack
+cards:
+  - type: 'custom:layout-break'
+  - type: horizontal-stack
+    title: Velg hvor du vil spille av
+    card_mod:
+      style: |
+        :host #root {
+          flex-wrap: wrap;
+          justify-content: space-evenly;
+          height: 10px;
+          height: auto;
+        }
+        :host #root > * {
+          flex-grow: 1;
+          flex-shrink: 1;
+          flex-basis: auto;
+          max-width: 150px;
+          max-height: 150px;
+          margin: 10px 5px;
+        }
+        :host #root layout-break {
+          display: none !important;
+        }
+    cards:
+      - type: 'custom:layout-break'
+      - type: button
+        entity: media_player.spotify_gramatus
+        name: Godehol
+        tap_action:
+          action: call-service
+          service: script.spill_musikk_2
+          service_data:
+            entity_id: media_player.godehol
+      - type: button
+        entity: media_player.spotify_gramatus
+        name: Kjøkkenet
+        tap_action:
+          action: call-service
+          service: script.spill_musikk_2
+          service_data:
+            entity_id: media_player.kjokkenet
+      - type: button
+        entity: media_player.spotify_gramatus
+        name: Kontoret
+        tap_action:
+          action: call-service
+          service: script.spill_musikk_2
+          service_data:
+            entity_id: media_player.kontoret
+      - type: button
+        entity: media_player.spotify_gramatus
+        name: KjøkkenNest
+        tap_action:
+          action: call-service
+          service: script.spill_musikk_2
+          service_data:
+            entity_id: media_player.kjokkennest
+      - type: button
+        entity: media_player.spotify_gramatus
+        name: Badet
+        tap_action:
+          action: call-service
+          service: script.spill_musikk_2
+          service_data:
+            entity_id: media_player.badet
+      - type: button
+        entity: media_player.spotify_gramatus
+        name: FM
+        tap_action:
+          action: call-service
+          service: script.spill_musikk_2
+          service_data:
+            entity_id: media_player.fm
+  - type: horizontal-stack
+    title: Velg hvor du vil spille av
+    card_mod:
+      style: |
+        :host #root {
+          flex-wrap: wrap;
+          justify-content: space-evenly;
+          height: 10px;
+          height: auto;
+        }
+        :host #root > * {
+          flex-grow: 1;
+          flex-shrink: 1;
+          flex-basis: auto;
+          max-width: 150px;
+          max-height: 150px;
+          margin: 10px 5px;
+        }
+        :host #root layout-break {
+          display: none !important;
+        }
+    cards:
+      - type: 'custom:layout-break'
+      - type: button
+        name: Classical Essentials
+        tap_action:
+          action: call-service
+          service: pyscript.play_playlist_random
+          service_data:
+            playlistid: 37i9dQZF1DWWEJlAGA9gs0
+          target: {}
+        entity: media_player.spotify_gramatus
+        card_mod:
+          style:
+            .: |
+              :host {
+                background: red;
+              }
+              :host span {
+                font-weight: 600;
+                color: blue;
+              }
+            ha-icon$:
+              .: |
+                :host ha-svg-icon {
+                  display: block;
+                  position: relative;
+                }
+                :host ha-svg-icon::before {
+                   content: "";
+                   height: var(--mdc-icon-size, 24px);
+                   width: var(--mdc-icon-size, 24px);
+                   position: absolute;
+                   left: 8px;
+                   border-radius: 0px;
+                   background-size: contain;
+                   display: block;
+                }
+                :host ha-svg-icon::before {
+                  background-image: url('https://i.scdn.co/image/ab67706f000000023e0130fcd5d106f1402b4707');
+                }
+              ha-svg-icon$: |
+                :host svg {
+                }
+                :host svg::before {
+                   content: "";
+                   height: var(--mdc-icon-size, 24px);
+                   width: var(--mdc-icon-size, 24px);
+                   display: block;
+                }
+      - type: button
+        name: Classical Essentials
+        entity: media_player.spotify_gramatus
+      - type: button
+        name: Classical Essentials
+        entity: media_player.spotify_gramatus
+      - type: button
+        name: Classical Essentials
+        entity: media_player.spotify_gramatus
+      - type: button
+        name: Classical Essentials
+        entity: media_player.spotify_gramatus
+      - type: button
+        name: Classical Essentials
+        entity: media_player.spotify_gramatus
+card_mod:
+  style:
+    .: |
+      :host #root {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+      :host #root > * {
+        flex-basis: 48%;
+        max-width: 500px;
+      }
+      :host #root > :nth-child(2) {
+        width: 100%;
+        height: auto;
+        padding: 10px;
+        flex-basis: auto;
+        min-width: inherit;
+        max-width: inherit;
+      }
+      :host #root layout-break {
+        display: none !important;
+      }
