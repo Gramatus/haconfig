@@ -1,3 +1,4 @@
+# HA-files that I don't want to sync
 home-assistant_v2.db*
 secrets.yaml
 pyscript/
@@ -12,3 +13,11 @@ harmony*.conf
 *.log
 custom_components/hacs
 custom_components/pyscript
+
+# VS Code default stuff
+*.code-workspace
+
+# Local folders I don't want to sync
+backup/
+backup-test/
+backup-move/
