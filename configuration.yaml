@@ -53,6 +53,8 @@ tellstick:
 sensor: !include sensors.yaml
 sensor weather: !include weather.yaml
 
+input_boolean: !include input_booleans.yaml
+
 binary_sensor: !include binary_sensors.yaml
 
 logger:

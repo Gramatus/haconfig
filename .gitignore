@@ -12,7 +12,9 @@ www/
 harmony*.conf
 *.log
 custom_components/hacs
-custom_components/pyscript
+custom_components/pyscript/*
+#custom_components/pyscript/*
+#!custom_components/pyscript/hue_test.py
 
 # Cache-files from python
 __pycache__/
