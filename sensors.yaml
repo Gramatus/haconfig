@@ -1,4 +1,6 @@
 - platform: spotcast
+# - platform: gramatus
+# - platform: roomtoggles
 - platform: uptime
   name: Oppetid HA
 - platform: time_date

@@ -43,8 +43,10 @@ spotcast:
   sp_dc: !secret sp_dc
   sp_key: !secret sp_key
 
-pyscript:
-  fullypwd: !secret fullypwd
+pyscript: !include pyscript/config.yaml
+
+gramatus:
+# roomtoggles:
 
 tellstick:
   host: core-tellstick
@@ -67,10 +69,17 @@ logger:
     homeassistant.components.cast: warn
     homeassistant.components.cast.media_player: warn
     custom_components.spotcast: warn
+    coap: warn
     homeassistant.components.auth: debug
     homeassistant.components.http.ban: debug
+    custom_components.gramatus: debug
+    custom_components.roomtoggles: debug
     #homeassistant.components.zeroconf: debug
     #pychromecast: debug
+    # My pyscripts
+    hue_tools: debug
+    fully_actions: debug
+    spotify_play: debug
   #filters:
     # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
     # Login from localhost is probably nabu casa
