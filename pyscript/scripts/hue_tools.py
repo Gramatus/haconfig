@@ -89,7 +89,7 @@ fields:
             entity:
                 domain: huescenes
 """
-    _LOGGER.debug("Running script")
+    # _LOGGER.debug("Running script")
     for entity_id in state.names(domain="roomtoggles"):
         room_state = state.get(entity_id)
         # _LOGGER.debug(entity_id + " state: " + room_state)

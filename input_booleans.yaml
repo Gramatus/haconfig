@@ -1,33 +1,33 @@
-lights_gui_select_rooms_badet:
-    name: 'Lights: GUI selected rooms: Badet'
-    icon: mdi:home-lightbulb
-lights_gui_select_rooms_stua:
-    name: 'Lights: GUI selected rooms: Stua'
-    icon: mdi:home-lightbulb
-lights_gui_select_rooms_kjokken:
-    name: 'Lights: GUI selected rooms: Kjøkkenet'
-    icon: mdi:home-lightbulb
-lights_gui_select_rooms_gangnede:
-    name: 'Lights: GUI selected rooms: Gang nede'
-    icon: mdi:home-lightbulb
-lights_gui_select_rooms_kontor:
-    name: 'Lights: GUI selected rooms: Kontoret'
-    icon: mdi:home-lightbulb
-lights_gui_select_rooms_kontor_gang:
-    name: 'Lights: GUI selected rooms: Gang nede og Kontoret'
-    icon: mdi:home-lightbulb
-lights_scenes_vanliglys_isactive:
-    name: 'Lights: Is active scene: 1. Vanlig lys'
-    icon: hass:lightbulb
-lights_scenes_daglys_isactive:
-    name: 'Lights: Is active scene: 2. Daglys'
-    icon: hass:lightbulb
-lights_scenes_kveldslys_isactive:
-    name: 'Lights: Is active scene: 3. Koselys'
-    icon: hass:lightbulb
-lights_scenes_snartkveld_isactive:
-    name: 'Lights: Is active scene: 4. Snart kveld'
-    icon: hass:lightbulb
-lights_scenes_arktisknordlys_isactive:
-    name: 'Lights: Is active scene: Arktisk nordlys'
-    icon: hass:lightbulb
+# lights_gui_select_rooms_badet:
+#     name: 'Lights: GUI selected rooms: Badet'
+#     icon: mdi:home-lightbulb
+# lights_gui_select_rooms_stua:
+#     name: 'Lights: GUI selected rooms: Stua'
+#     icon: mdi:home-lightbulb
+# lights_gui_select_rooms_kjokken:
+#     name: 'Lights: GUI selected rooms: Kjøkkenet'
+#     icon: mdi:home-lightbulb
+# lights_gui_select_rooms_gangnede:
+#     name: 'Lights: GUI selected rooms: Gang nede'
+#     icon: mdi:home-lightbulb
+# lights_gui_select_rooms_kontor:
+#     name: 'Lights: GUI selected rooms: Kontoret'
+#     icon: mdi:home-lightbulb
+# lights_gui_select_rooms_kontor_gang:
+#     name: 'Lights: GUI selected rooms: Gang nede og Kontoret'
+#     icon: mdi:home-lightbulb
+# lights_scenes_vanliglys_isactive:
+#     name: 'Lights: Is active scene: 1. Vanlig lys'
+#     icon: hass:lightbulb
+# lights_scenes_daglys_isactive:
+#     name: 'Lights: Is active scene: 2. Daglys'
+#     icon: hass:lightbulb
+# lights_scenes_kveldslys_isactive:
+#     name: 'Lights: Is active scene: 3. Koselys'
+#     icon: hass:lightbulb
+# lights_scenes_snartkveld_isactive:
+#     name: 'Lights: Is active scene: 4. Snart kveld'
+#     icon: hass:lightbulb
+# lights_scenes_arktisknordlys_isactive:
+#     name: 'Lights: Is active scene: Arktisk nordlys'
+#     icon: hass:lightbulb
