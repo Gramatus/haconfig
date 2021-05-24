@@ -1,7 +1,6 @@
 # HA-files that I don't want to sync
 home-assistant_v2.db*
 secrets.yaml
-pyscript/
 .cloud/
 .storage/
 deps/
