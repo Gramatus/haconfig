@@ -1,8 +1,45 @@
 import aiohttp
 import asyncio
 import logging
+import urllib
 
 _LOGGER = logging.getLogger(__name__)
+
+@service
+def fully_set_alarm(time,playlistID,device):
+    """yaml
+name: Turn screen on for Fully Device
+fields:
+    time:
+        description: Time to start alarm
+        required: true
+        example: 23:59:59
+        selector:
+            time:
+    playlistID:
+        description: ID of playlist to start
+        required: true
+        example: 37i9dQZF1DWVpjAJGB70vU
+        selector:
+            text:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett2
+        selector:
+            entity:
+                domain: fully
+"""
+    ip = state.getattr(device)["ip"]
+    _LOGGER.debug(ip)
+    timeParts = time.split(":")
+    _LOGGER.debug(timeParts[0])
+    _LOGGER.debug(timeParts[1])
+
+    queryParams = urllib.parse.quote_plus("intent:playlistid:"+playlistID+";hour:"+timeParts[0]+";minute:"+timeParts[1]+"#Intent;launchFlags=0x10000000;component=com.gramatus.setalarm/.MainActivity;end")
+    _LOGGER.debug(queryParams)
+    fully_action(ip,"loadUrl","&url="+queryParams)
+
 
 @service
 async def fully_open_app(pkg,device):

@@ -4,8 +4,21 @@ import logging
 import async_timeout
 from homeassistant.helpers import aiohttp_client,entity_registry
 import attr
+import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
+
+@service
+def start_wakeup_light():
+    """yaml
+name: Start wakeup light
+description: Start the wakeup light routine
+"""
+    url = 'http://'+pyscript.config["hue_ip"]+'/api/'+pyscript.config["hue_user"]+'/sensors/143/state'
+    body = '{"status": 1}'
+    async with aiohttp.ClientSession() as session:
+        async with session.put(url,data=body) as response:
+            _LOGGER.debug("Response from Hue: Status "+str(response.status)+", reply: "+response.text())
 
 # bzJVKN6HRpYcaaw
 @service
@@ -73,7 +86,6 @@ fields:
     else:
         state.set(room_entity, value = "on")
         state.setattr(room_entity+".is_on", True)
-
 
 @service
 def turn_on_scene_for_active_rooms(scene_entity):

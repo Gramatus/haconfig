@@ -121,7 +121,7 @@
     entity_id: input_select.nattlys_varighet
     state: 15 min
   action:
-  - service: pyscript.turn_on_scene
+  - service: pyscript.turn_on_scene_by_id
     data:
       scene_id: Y2qG5PtH6AC7b1j
   - delay:
@@ -129,7 +129,7 @@
       minutes: 0
       seconds: 10
       milliseconds: 0
-  - service: pyscript.turn_on_scene
+  - service: pyscript.turn_on_scene_by_id
     data:
       scene_id: xyJCA3wUDhukb-w
   - delay:
@@ -160,4 +160,46 @@
   - service: light.turn_off
     target:
       entity_id: light.c_hue_go_soverom_2
+  mode: restart
+- id: '1629057762940'
+  alias: 'Vekking: lyd'
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.vekking
+  - platform: sun
+    event: sunrise
+    offset: '-15'
+  condition:
+  - condition: sun
+    after: sunrise
+    after_offset: '-10'
+  action:
+  - service: remote.turn_on
+    data:
+      activity: Listen to Music
+    target:
+      entity_id: remote.harmony_hub_2
+  mode: restart
+- id: '1629177948654'
+  alias: 'Vekking: rullegardin'
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.vekking
+  - platform: sun
+    event: sunrise
+    offset: '-10'
+  condition:
+  - condition: sun
+    after: sunrise
+    after_offset: '-15'
+  - condition: time
+    after: input_datetime.vekking
+  action:
+  - device_id: f1b95e9bf965bb365b1cf27098557194
+    domain: cover
+    entity_id: cover.tradfri_blind
+    type: set_position
+    position: 100
   mode: restart
