@@ -2,20 +2,18 @@ import aiohttp
 import asyncio
 import logging
 import urllib
+from yarl import URL
+import requests
+import time
+import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
 @service
-def fully_set_alarm(time,playlistID,device):
+def fully_set_wakeup_alarm(playlistID,device):
     """yaml
-name: Turn screen on for Fully Device
+name: Set alarm to wakeup
 fields:
-    time:
-        description: Time to start alarm
-        required: true
-        example: 23:59:59
-        selector:
-            time:
     playlistID:
         description: ID of playlist to start
         required: true
@@ -30,16 +28,113 @@ fields:
             entity:
                 domain: fully
 """
+    fully_set_alarm(time=input_datetime.vekking,playlistID=playlistID,device=device)
+
+@service
+def fully_set_backup_wakeup_alarm(device):
+    """yaml
+name: Set backup alarm to wakeup
+fields:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett2
+        selector:
+            entity:
+                domain: fully
+"""
+    wakeuptime = time.strptime(state.get("input_datetime.vekking"),"%H:%M:%S")
+    wakeuptime = datetime.datetime.strptime(state.get("input_datetime.vekking"),"%H:%M:%S") + datetime.timedelta(minutes=30)
+    _LOGGER.info("Setting backup alarm to 30 minutes later: " + wakeuptime.strftime("%H:%M:%S"))
+    fully_set_alarm(time=wakeuptime.strftime("%H:%M:%S"),playlistID="",device=device)
+
+@service
+def fully_set_alarm(time,device,playlistID=None,screenBrightness=None,showAlarmTime=30,turnOffAfter=True):
+    """yaml
+name: Set alarm
+fields:
+    time:
+        description: Time to start alarm
+        required: true
+        example: 23:59:59
+        selector:
+            time:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett2
+        selector:
+            entity:
+                domain: fully
+    playlistID:
+        description: ID of playlist to start
+        required: false
+        example: 37i9dQZF1DWVpjAJGB70vU
+        selector:
+            text:
+    screenBrightness:
+        description: Brightness level
+        required: false
+        example: 100
+        selector:
+            number:
+                min: 0
+                max: 255
+                mode: box
+                step: 1
+    showAlarmTime:
+        description: Time to show the alarm app on the screen (so you can see the result)
+        required: false
+        example: 30
+        selector:
+            number:
+                min: 0
+                max: 120
+                mode: box
+                step: 15
+    turnOffAfter:
+        description: If true (default), the screen will turn off after. If false it will return to fully (it will also return to fully if the screen turns off, but you will not see that)
+        required: false
+        example: true
+        selector:
+            boolean:
+"""
     ip = state.getattr(device)["ip"]
-    _LOGGER.debug(ip)
     timeParts = time.split(":")
-    _LOGGER.debug(timeParts[0])
-    _LOGGER.debug(timeParts[1])
-
-    queryParams = urllib.parse.quote_plus("intent:playlistid:"+playlistID+";hour:"+timeParts[0]+";minute:"+timeParts[1]+"#Intent;launchFlags=0x10000000;component=com.gramatus.setalarm/.MainActivity;end")
-    _LOGGER.debug(queryParams)
+    if screenBrightness != None:
+        fully_set_brightness(device,screenBrightness)
+    fully_turn_on_screen(device=device)
+    playlistID = None
+    if playlistID:
+        queryParams = urllib.parse.quote_plus("intent:playlistid:"+playlistID+";hour:"+timeParts[0]+";minute:"+timeParts[1]+"#Intent;launchFlags=0x10000000;component=com.gramatus.setalarm/.MainActivity;end")
+    else:
+        queryParams = urllib.parse.quote_plus("intent:hour:"+timeParts[0]+";minute:"+timeParts[1]+"#Intent;launchFlags=0x10000000;component=com.gramatus.setalarm/.MainActivity;end")
     fully_action(ip,"loadUrl","&url="+queryParams)
+    _LOGGER.info("Waiting for " + str(showAlarmTime) + " seconds")
+    await asyncio.sleep(showAlarmTime)
+    if turnOffAfter:
+        fully_turn_off_screen(device=device)
+    fully_to_foreground(device=device)
 
+@service
+def fully_dismiss_alarm(device):
+    """yaml
+name: Dismiss alarm
+description: Dismisses the first alarm set by com.gramatus.setalarm
+fields:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett2
+        selector:
+            entity:
+                domain: fully
+"""
+    ip = state.getattr(device)["ip"]
+    # _LOGGER.debug(ip)
+    queryParams = urllib.parse.quote_plus("intent:dismiss:true#Intent;launchFlags=0x10000000;component=com.gramatus.setalarm/.MainActivity;end")
+    # _LOGGER.debug(queryParams)
+    fully_action(ip,"loadUrl","&url="+queryParams)
 
 @service
 async def fully_open_app(pkg,device):
@@ -113,7 +208,40 @@ fields:
             entity:
                 domain: fully
 """
+    ip = state.getattr(device)["ip"]
     fully_action(ip,"screenOn")
+
+@service
+def fully_turn_off_screen(device):
+    """yaml
+name: Turn screen off for Fully Device
+fields:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett2
+        selector:
+            entity:
+                domain: fully
+"""
+    ip = state.getattr(device)["ip"]
+    fully_action(ip,"screenOff")
+
+@service
+def fully_to_foreground(device):
+    """yaml
+name: Load fully app in the foreground
+fields:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett2
+        selector:
+            entity:
+                domain: fully
+"""
+    ip = state.getattr(device)["ip"]
+    fully_action(ip,"toForeground")
 
 @service
 def fully_start_screensaver(device):
@@ -154,11 +282,17 @@ fields:
                 mode: slider
                 step: 1
 """
+    ip = state.getattr(device)["ip"]
     fully_action(ip,"setStringSetting","&key=screenBrightness&value="+str(level))
 
 async def fully_action(ip,action,params=""):
     pwd = pyscript.config["fully_pwd"]
-    _LOGGER.debug("Triggering action: %s",action)
+    # _LOGGER.debug("Triggering action: %s",action)
+    full_url = 'http://'+ip+':2323/?password='+pwd+'&type=json&cmd='+action+params
+    encoded_url = URL(full_url,encoded=True)
+    
+    _LOGGER.debug(" > Calling: " + str(encoded_url))
     async with aiohttp.ClientSession() as session:
-        async with session.get('http://'+ip+':2323/?password='+pwd+'&type=json&cmd='+action+params) as response:
+        async with session.get(encoded_url, allow_redirects=False) as response:
+            # _LOGGER.debug(response.url)
             _LOGGER.debug("Response from fully: Status "+str(response.status)+", reply: "+response.text())

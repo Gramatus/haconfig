@@ -1,3 +1,5 @@
 fully_pwd: !secret fullypwd
 hue_ip: 192.168.50.52
 hue_user: !secret hue_user
+sp_dc: !secret sp_dc
+sp_key: !secret sp_key

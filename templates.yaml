@@ -1,0 +1,162 @@
+- sensor:
+  - unique_id: bad_fade_slutt
+    state: >-
+      {{ states.timer.lysfade_bad_aktiv_fade.state }}
+    icon: >
+      {{ state_attr("timer.lysfade_bad_aktiv_fade","icon") }}
+    attributes:
+      friendly_name: >
+        Bad: fader til scene {{ states.input_text.lysfade_bad_aktiv_scene.state }}
+      duration: >
+        {{ state_attr("timer.lysfade_bad_aktiv_fade","duration") }}
+      start_time: >
+        {{ states.timer.lysfade_bad_aktiv_fade.last_changed }}
+      end_time: >
+        {{ state_attr("timer.lysfade_bad_aktiv_fade","finishes_at") }}
+  - unique_id: aktiv_lysfade_hoved
+    state: >-
+      {% set ns = namespace(entity_list='') %}
+      {% for item in states.pyscript %}
+        {% if 'hue' in item.entity_id and 'hoved' in item.entity_id and item.state == 'on' %}
+          {% set ns.entity_list = ns.entity_list + ',' + item.name %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.entity_list.split(',') | select("ne", '') | join(', ') }}
+    icon: >
+      {{ state_attr("input_select.lysfade_aktiv_gruppe","icon") }}
+    attributes:
+      friendly_name: >
+        {% set ns = namespace(entity_list='') %}
+        {% for item in states.pyscript %}
+          {% if 'hue' in item.entity_id and 'hoved' in item.entity_id and item.state == 'on' %}
+            {% set ns.entity_list = ns.entity_list + ',' + item.name %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.entity_list.split(',') | select("ne", '') | join(', ') }}
+  - unique_id: aktiv_lysfade_fastelys
+    state: >-
+      {% set ns = namespace(entity_list='') %}
+      {% for item in states.pyscript %}
+        {% if 'hue' in item.entity_id and 'fastelys' in item.entity_id and item.state == 'on' %}
+          {% set ns.entity_list = ns.entity_list + ',' + item.name %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.entity_list.split(',') | select("ne", '') | join(', ') }}
+    icon: >
+      {{ state_attr("input_select.lysfade_aktiv_gruppe","icon") }}
+    attributes:
+      friendly_name: >
+        {% set ns = namespace(entity_list='') %}
+        {% for item in states.pyscript %}
+          {% if 'hue' in item.entity_id and 'fastelys' in item.entity_id and item.state == 'on' %}
+            {% set ns.entity_list = ns.entity_list + ',' + item.name %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.entity_list.split(',') | select("ne", '') | join(', ') }}
+  - unique_id: tablet_next_alarm
+    state: >-
+      {% if states.sensor.nettbrett1_next_alarm.state == "unavailable" %}
+      {{ "unknown" }}
+      {% else %}
+      {{ as_timestamp(states.sensor.nettbrett1_next_alarm.state)|timestamp_custom('%H:%M', true) }}
+      {% endif %}
+    attributes:
+      icon: 'mdi:alarm'
+      friendly_name: 'Neste alarm på nettbrett'
+      active: >-
+        {% if states.sensor.nettbrett1_next_alarm.state == "unavailable" %}
+        {{ "Off" }}
+        {% else %}
+        {{ "On" }}
+        {% endif %}
+  - unique_id: wakeup_alarm
+    state: >-
+      {{ state_attr('input_datetime.vekking', 'timestamp') | timestamp_custom('%H:%M', false) }}
+    attributes:
+      icon: 'mdi:alarm'
+      friendly_name: 'Vekking'
+  - unique_id: missing_some_alarm_setting
+    state: >-
+      {{ states.sensor.template_tablet_next_alarm.state == "unknown" or  states.input_boolean.alarm_aktiv.state == "off" }}
+    attributes:
+      friendly_name: 'Alarm inaktiv for HA eller nettbrett'
+  - unique_id: tablet_alarm_active
+    state: >-
+      {% if states.sensor.template_tablet_next_alarm.state == "unknown" %}
+      {{ "off" }}
+      {% else %}
+      {{ "on" }}
+      {% endif %}
+    attributes:
+      icon: 'mdi:alarm'
+      friendly_name: 'Alarm nettbrett aktiv'
+  - unique_id: next_transition_hoved
+    state: >-
+      {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+      {% set ns = namespace(nextTimer='',nextTimestamp=0,firstTimer='',firstTimestamp=0) %}
+      {% set ns.nextTimestamp = 60*60*24 %}
+      {% set ns.firstTimestamp = 60*60*24 %}
+      {% for item in states.pyscript %}
+        {% if 'huetrans_hoved' in item.entity_id %}
+          {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
+          {% if endtime_entity != None %}
+            {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% set transTimestamp = state_attr(endtime_entity, 'timestamp') %}
+            {% if nowTimestamp < transTimestamp %}
+              {% if ns.nextTimestamp > transTimestamp %}
+                {% set ns.nextTimer = item.entity_id %}
+                {% set ns.nextTimestamp = transTimestamp %}
+              {% endif %}
+            {% endif %}
+            {% if ns.firstTimestamp > transTimestamp %}
+              {% set ns.firstTimer = item.entity_id %}
+              {% set ns.firstTimestamp = transTimestamp %}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.firstTimestamp > ns.nextTimestamp or ns.nextTimestamp == 60*60*24 %}
+        {% set ns.nextTimer = ns.firstTimer %}
+        {% set ns.nextTimestamp = ns.firstTimestamp %}
+      {% endif %}
+      {{ ns.nextTimer }}
+    attributes:
+      icon: 'mdi:car-parking-lights'
+      friendly_name: 'Data entity for next transition group with "hoved"'
+  - unique_id: next_transition_fastelys
+    state: >-
+      {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+      {% set ns = namespace(nextTimer='',nextTimestamp=0,firstTimer='',firstTimestamp=0) %}
+      {% set ns.nextTimestamp = 60*60*24 %}
+      {% set ns.firstTimestamp = 60*60*24 %}
+      {% for item in states.pyscript %}
+        {% if 'huetrans_fastelys' in item.entity_id %}
+          {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
+          {% if endtime_entity != None %}
+            {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% set transTimestamp = state_attr(endtime_entity, 'timestamp') %}
+            {% if nowTimestamp < transTimestamp %}
+              {% if ns.nextTimestamp > transTimestamp %}
+                {% set ns.nextTimer = item.entity_id %}
+                {% set ns.nextTimestamp = transTimestamp %}
+              {% endif %}
+            {% endif %}
+            {% if ns.firstTimestamp > transTimestamp %}
+              {% set ns.firstTimer = item.entity_id %}
+              {% set ns.firstTimestamp = transTimestamp %}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.firstTimestamp > ns.nextTimestamp or ns.nextTimestamp == 60*60*24 %}
+        {% set ns.nextTimer = ns.firstTimer %}
+        {% set ns.nextTimestamp = ns.firstTimestamp %}
+      {% endif %}
+      {{ ns.nextTimer }}
+    attributes:
+      icon: 'mdi:car-parking-lights'
+      friendly_name: 'Data entity for next transition group with "Faste lys"'
+  - unique_id: test_temp_diff
+    state: '{{ (states("sensor.kontoret_temperature")|float) - (states("input_number.termostat_kontoret")|float) }}'
+    attributes:
+      friendly_name: 'Test diff temperatur vs termostat'

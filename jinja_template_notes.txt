@@ -1,0 +1,85 @@
+{{ state_attr('pyscript.transtools_settings','light_bad')['trans_active'] }}
+
+{% set timeDiff = state_attr('input_datetime.huetrans_arbeidslys_endtime', 'timestamp') - state_attr('input_datetime.huetrans_vekking_endtime', 'timestamp') %}
+{{ timeDiff < 60*60 }}
+
+{% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+input_datetime.huetrans_kveldslys_endtime
+{% set ns = namespace(nextTimer='',nextTimestamp=0,firstTimer='',firstTimestamp=0) %}
+{% for item in states.pyscript %}
+  {% if 'huetrans_hoved' in item.entity_id %}
+    {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
+    {% if endtime_entity != None %}
+      {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+      {% set transTimestamp = state_attr(endtime_entity, 'timestamp') %}
+      {% if ns.nextTimer == '' %}
+        {% set ns.nextTimer = item.entity_id %}
+        {% set ns.firstTimestamp = transTimestamp %}
+      {% endif %}
+      {% if nowTimestamp < transTimestamp and ns.nextTimestamp < transTimestamp %}
+        {% set ns.nextTimer = item.entity_id %}
+        {% set ns.nextTimestamp = transTimestamp %}
+      {% endif %}
+      {% if ns.firstTimestamp > transTimestamp %}
+        {% set ns.firstTimer = item.entity_id %}
+        {% set ns.firstTimestamp = transTimestamp %}
+      {% endif %}
+      Neste fade: {{ ns.nextTimestamp | timestamp_custom('%H:%M', false) }}, Den vi ser på nå: {{ transTimestamp | timestamp_custom('%H:%M', false) }}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if ns.firstTimestamp > ns.nextTimestamp %}
+  {% set ns.nextTimer = ns.firstTimer %}
+  {% set ns.nextTimestamp = ns.firstTimestamp %}
+{% endif %}
+{{ ns.nextTimestamp | timestamp_custom('%H:%M:%S', false) }}
+{{ ns.nextTimer }}: {{ ns.nextTimestamp | timestamp_custom('%H:%M', false) }}
+{{ now().timestamp() | timestamp_custom('%H:%M', true) == ns.nextTimestamp | timestamp_custom('%H:%M', false)}}
+
+{% set ns = namespace(entity_list='') %}
+{% for item in states.pyscript %}
+  {% if 'hue' in item.entity_id and 'hoved' in item.entity_id and item.state == 'off' %}
+    {% set ns.entity_list = ns.entity_list + ',' + item.name %}
+  {% endif %}
+{% endfor %}
+{{ ns.entity_list.split(',') | select("ne", '') | join(', ') }}
+
+
+{{ now().timestamp() | timestamp_custom('%H:%M', true) == (state_attr('input_datetime.vekking', 'timestamp') - 1800) | timestamp_custom('%H:%M', false)}}
+{{ timedelta( hours = state_attr('input_datetime.vekking', 'hour'), minutes = state_attr('input_datetime.vekking', 'minute') ) }}
+{{state_attr('input_datetime.vekking', 'timestamp')|timestamp_custom('%H:%M:%S', false) }}
+{% set alarmTimestamp = state_attr('input_datetime.vekking', 'timestamp') %}
+{% if nowTimestamp > alarmTimestamp %}
+Tid til vekking (i morgen): {{ ((alarmTimestamp + (60*60*24)) - nowTimestamp) | timestamp_custom('%H:%M', false) }}
+{% else %}
+Tid til vekking (i dag): {{ (alarmTimestamp - nowTimestamp) | timestamp_custom('%H:%M', false)}}
+{% endif %}
+
+{{ as_timestamp(states.sensor.nettbrett1_next_alarm.state)|timestamp_custom('%H:%M', true) }}
+
+{{ state_attr('input_datetime.vekking', 'timestamp') | timestamp_custom('%H:%M', false) }}
+
+{{ states.sensor.template_tablet_next_alarm.state }}
+{{ states.sensor.template_tablet_next_alarm.state == "unknown" or  states.input_boolean.alarm_aktiv.state == "off" }}
+{{ states.input_boolean.alarm_aktiv.state == "off" }}
+- entity: input_boolean.alarm_aktiv
+        state_not: 'on'
+      - entity: sensor.template_tablet_next_alarm
+        state: 'unknown'
+
+
+{% set lastChanged = as_timestamp(states.timer.lysfade_bad_aktiv_fade.last_changed) %}
+set finishesAt = as_timestamp(state_attr("timer.lysfade_bad_aktiv_fade","finishes_at")) %}
+{% set finishesAt = as_timestamp(states.timer.lysfade_bad_aktiv_fade.last_changed) %}
+{% set duration = finishesAt - lastChanged %}
+{{ lastChanged }}
+{{ finishesAt }}
+{{ duration | timestamp_custom('%H:%M:%S', false) }}
+{{ state_attr('timer.lysfade_bad_aktiv_fade', 'finishes_at') }}
+{{ states.input_text.lysfade_bad_aktiv_scene.state }}
+
+      {% if states.sensor.nettbrett1_next_alarm.state == "unavailable" %}
+      {{ "unknown" }}
+      {% else %}
+      {{ as_timestamp(states.sensor.nettbrett1_next_alarm.state)|timestamp_custom('%H:%M:%S', true) }}
+      {% endif %}

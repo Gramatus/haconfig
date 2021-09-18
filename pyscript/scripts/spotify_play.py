@@ -1,6 +1,9 @@
 # https://hacs-pyscript.readthedocs.io/en/latest/
 import logging
 from homeassistant.helpers import entity_platform
+import asyncio
+import playlist_services
+
 _LOGGER = logging.getLogger(__name__)
 
 # Purpose of this script: playing podcast episodes from HA.
@@ -9,11 +12,103 @@ _LOGGER = logging.getLogger(__name__)
 #data:
 #  playlistid: 2VarjDoOdeWCYjCtLLdkSM
 @service
-def play_playlist_random(playlistid):
+async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist", reuse_shuffle=True):
+    """yaml
+name: Play playlist with or without shuffle
+description: Starts playing the playlist in shuffle mode on the "current" playing entity (default is media_player.kjokkenet)
+fields:
+    playlistid:
+        description: ID of the playlist
+        required: true
+        example: 2pjB7wGkkoG9VYY8enMR5b
+        selector:
+            text:
+    device:
+        description: Media player (ChromeCast device) to play playlist on
+        required: false
+        example: media_player.spotify_gramatus
+        selector:
+            entity:
+                domain: media_player
+    shuffle_type:
+        description: If the playlist should be shuffled
+        required: false
+        example: true
+        selector:
+            select:
+                options:
+                    - "No shuffle"
+                    - "Reuse shadow playlist"
+                    - "Update shadow playlist"
+"""
+    shuffle = True
+    if shuffle_type == "No shuffle":
+        shuffle = False
+    delay_seconds = 2
+    volume_fade_seconds = 10
+    if playlistid == None:
+        return
+    if device == None:
+        device = "media_player.godehol"
+    player_attr = state.getattr(device)
+    _LOGGER.info("  - Setting volume to 0 for " + player_attr["friendly_name"])
+    media_player.volume_set(entity_id=device,volume_level=0)
+    if shuffle and shuffle_type == "Reuse shadow playlist":
+        _LOGGER.info("  - Getting ID for the related shuffled shadow playlist")
+        playlistid, playlist_exists = playlist_services.ensure_shuffle_playlist_exists(playlistid)
+        if not playlist_exists:
+            shuffle_type = "Update shadow playlist"
+    if shuffle and shuffle_type == "Update shadow playlist":
+        _LOGGER.info("  - Updating the related shuffled shadow playlist")
+        playlistid = playlist_services.ensure_shuffled_playlist(playlistid)
+    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast")
+    spotcast.start(entity_id=device)
+    _LOGGER.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
+    await asyncio.sleep(delay_seconds)
+    _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
+    media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
+    media_player.play_media(entity_id="media_player.spotify_gramatus", media_content_id="spotify:playlist:" + playlistid, media_content_type="playlist")
+    _LOGGER.info("  - Waiting " + str(delay_seconds) + " more seconds")
+    await asyncio.sleep(delay_seconds)
+    # _LOGGER.info("Shuffling playlist and then starting volumne increase over " + str(volume_fade_seconds) + " seconds")
+    _LOGGER.info(" - Starting volume increase over " + str(volume_fade_seconds) + " seconds")
+    pyscript.volume_increase(fadein_seconds=volume_fade_seconds, device=device, initial_volume = 0.0, final_volume = 0.9)
+
+@service
+def play_playlist_random_old(playlistid):
+    """yaml
+name: Play playlist with shuffle (old version)
+description: Starts playing the playlist in shuffle mode on the "current" playing entity (default is media_player.kjokkenet)
+fields:
+    playlistid:
+        description: ID of the playlist
+        required: true
+        example: 5xddIVAtLrZKtt4YGLM1SQ
+        selector:
+            text:
+"""
     if playlistid is not None:
         playingEntity = getPlayingEntity()
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
+
+@service
+def play_playlist_random_godehol(playlistid):
+    """yaml
+name: Play next episode
+description: Starts playing the playlist in shuffle mode on the "Godehol" group
+fields:
+    playlistid:
+        description: ID of the playlist
+        required: true
+        example: 5xddIVAtLrZKtt4YGLM1SQ
+        selector:
+            text:
+"""
+    if playlistid is not None:
+        playingEntity = getPlayingEntity()
+        _LOGGER.debug("Calling spotcast.start")
+        spotcast.start(entity_id="media_player.godehol",uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
 #data:
 #  showid: 2VarjDoOdeWCYjCtLLdkSM
@@ -109,3 +204,38 @@ def gramatus_test2(entity_id):
         _LOGGER.debug("Calling spotcast.start")
         #spotcast.start(entity_id=entity_id,uri="spotify:playlist:0C2U8SFwZ3Y9bBjVa2KSMx")
         _LOGGER.debug("DONE")
+
+@service
+def ensure_shuffled_playlist(playlistid):
+    """yaml
+name: Ensure shuffled playlist
+description: Creates or uppdates a "shadow" playlist that is shuffled according to my own custom algorithm
+fields:
+    playlistid:
+        description: ID of the playlist
+        required: true
+        example: 2pjB7wGkkoG9VYY8enMR5b
+        selector:
+            text:
+"""
+    shuffle_playlist_id = playlist_services.ensure_shuffled_playlist(playlistid)
+    # update_recently_played()
+    # shuffle_playlist_id = ensure_shuffle_playlist_exists(playlistid)
+    # update_shuffle_playlist(playlistid, shuffle_playlist_id)
+    return shuffle_playlist_id
+
+@service
+def spotify_test():
+    """yaml
+name: Spotify test code
+"""
+    # truncate_playlist("6bA10TtiyuqQP0yEYnrd3X")
+    # update_shuffle_playlist("2pjB7wGkkoG9VYY8enMR5b","6bA10TtiyuqQP0yEYnrd3X")
+    # update_shuffle_playlist("3FVKcokzHla6424Cj74LzL","52w4nPUOmgaal2IMdL6Cqk")
+    playlistid = "78RaOXPHXD4zJWFRwzbuEI" # TP 23.5.19
+    playlistid = "2pjB7wGkkoG9VYY8enMR5b" # Alle gromlåter
+    playlistid = "3FVKcokzHla6424Cj74LzL" # Min våkneliste
+    playlist = spotify_get("/playlists/" + playlistid, False)
+    ensure_shuffle_playlist_exists(playlistid)
+    # update_shuffle_playlist("78RaOXPHXD4zJWFRwzbuEI")
+    # update_recently_played()

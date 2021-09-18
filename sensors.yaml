@@ -47,3 +47,52 @@
                 {{ mediaPlayer.entity_id }}
               {% endif %}
             {% endfor %}
+      tid_til_vekking:
+          friendly_name: "Tid til vekking"
+          icon_template: mdi:alarm
+          value_template: >-
+            {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+            {% set alarmTimestamp = state_attr('input_datetime.vekking', 'timestamp') %}
+            {% if nowTimestamp > alarmTimestamp %}
+            {{ ((alarmTimestamp + (60*60*24)) - nowTimestamp) | timestamp_custom('%H:%M', false) }}
+            {% else %}
+            {{ (alarmTimestamp - nowTimestamp) | timestamp_custom('%H:%M', false)}}
+            {% endif %}
+      # bad_fade_slutt:
+      #     friendly_name: >-
+      #       {{ states.input_text.lysfade_bad_aktiv_scene.state }}
+      #     icon_template: mdi:alarm
+      #     value_template: >-
+      #       {% set lastChanged = timer.lysfade_bad_aktiv_fade.last_changed %}
+      #       {% set finishesAt = state.getattr("timer.lysfade_bad_aktiv_fade")["finishes_at"] %}
+      #       {{ state_attr('timer.lysfade_bad_aktiv_fade', 'finishes_at') }}
+      next_transition_hoved:
+          friendly_name: "Neste avslutning for en transition (ny)"
+          value_template: >-
+            {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+            {% set ns = namespace(nextTimer='',nextTimestamp=0,firstTimestamp=0) %}
+            {% for item in states.pyscript %}
+              {% if 'huetrans_hoved' in item.entity_id %}
+                {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
+                {% if endtime_entity != None %}
+                  {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+                  {% set transTimestamp = state_attr(endtime_entity, 'timestamp') %}
+                  {% if ns.nextTimer == '' %}
+                    {% set ns.nextTimer = endtime_entity %}
+                    {% set ns.firstTimestamp = transTimestamp %}
+                  {% endif %}
+                  {% if nowTimestamp < transTimestamp and ns.nextTimestamp < transTimestamp %}
+                    {% set ns.nextTimer = endtime_entity %}
+                    {% set ns.nextTimestamp = transTimestamp %}
+                  {% endif %}
+                  {% if ns.firstTimestamp > transTimestamp %}
+                    {% set ns.firstTimestamp = transTimestamp %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {% if ns.firstTimestamp > ns.nextTimestamp %}
+              {% set ns.nextTimestamp = ns.firstTimestamp %}
+            {% endif %}
+            {{ ns.nextTimestamp | timestamp_custom('%H:%M:%S', false) }}
+          icon_template: 'mdi:car-parking-lights'

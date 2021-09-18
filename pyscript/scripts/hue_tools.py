@@ -5,8 +5,50 @@ import async_timeout
 from homeassistant.helpers import aiohttp_client,entity_registry
 import attr
 import aiohttp
+import datetime
 
 _LOGGER = logging.getLogger(__name__)
+
+entity_prefix_thermo = "thermostat_"
+
+state.persist("pyscript." + entity_prefix_thermo + "kontor", "off", {
+    "icon": "mdi:thermostat-box",
+    "device_class": "thermostat",
+    "friendly_name": "Innstillinger for termostat på kontoret",
+    "sensor_entity": "sensor.kontoret_temperature",
+    "target_entity": "input_number.termostat_kontoret",
+    "switches": [
+        "light.termostat_kontoret"
+    ]
+})
+
+@service
+def toggle_thermostat(thermostat):
+    """yaml
+name: Toggle 
+description: Turn on a Hue scene based on the scene ID (will use group 0 if no group is specified)
+fields:
+    thermostat:
+        description: Entity with settings for this thermostat
+        required: true
+        example: pyscript.thermostat_kontor
+        selector:
+            entity:
+                domain: pyscript
+                device_class: thermostat
+"""
+    data = state.getattr(thermostat)
+    current_temp = state.get(data["sensor_entity"])
+    target_temp = state.get(data["target_entity"])
+    target_state = "off" if current_temp > target_temp else "on"
+    _LOGGER.info("Current temperature is now " + str(current_temp) + ". With a target of " + str(target_temp) + " we are now turning " + target_state + " this thermostat:")
+    for switch in data["switches"]:
+        _LOGGER.info("  > turning " + target_state + " " + switch)
+        if target_state == "off":
+            light.turn_off(entity_id=switch)
+        else:
+            light.turn_on(entity_id=switch)
+    state.set(thermostat, target_state)
 
 @service
 def start_wakeup_light():
@@ -14,6 +56,8 @@ def start_wakeup_light():
 name: Start wakeup light
 description: Start the wakeup light routine
 """
+    _LOGGER.info("This method is no longer used, returing")
+    return
     url = 'http://'+pyscript.config["hue_ip"]+'/api/'+pyscript.config["hue_user"]+'/sensors/143/state'
     body = '{"status": 1}'
     async with aiohttp.ClientSession() as session:
@@ -22,7 +66,7 @@ description: Start the wakeup light routine
 
 # bzJVKN6HRpYcaaw
 @service
-def turn_on_scene_by_id(scene_id,group_id=None):
+def turn_on_scene_by_id(scene_id,group_id=None,transitionhours=0,transitionmins=0,transitionsecs=0,transitionms=400):
     """yaml
 name: Turn on scene by ID
 description: Turn on a Hue scene based on the scene ID (will use group 0 if no group is specified)
@@ -40,6 +84,46 @@ fields:
         selector:
             entity:
                 domain: light
+    transitionhours:
+        description: Optional (default is 0). Number of hours for the transition to last. If the total time of the transition is above 1:49:13, it will be set to that.
+        required: false
+        example: 0
+        selector:
+            number:
+                min: 0
+                max: 2
+                mode: box
+                step: 1
+    transitionmins:
+        description: Optional (default is 0). Number of minutes for the transition to last. If the total time of the transition is above 1:49:13, it will be set to that.
+        required: false
+        example: 0
+        selector:
+            number:
+                min: 0
+                max: 60
+                mode: box
+                step: 1
+    transitionsecs:
+        description: Optional (default is 0). Number of seconds for the transition to last. If the total time of the transition is above 1:49:13, it will be set to that.
+        required: false
+        example: 0
+        selector:
+            number:
+                min: 0
+                max: 60
+                mode: box
+                step: 1
+    transitionms:
+        description: Optional (default is 400). Number of milliseconds for the transition to last.
+        required: false
+        example: 400
+        selector:
+            number:
+                min: 0
+                max: 1000
+                mode: box
+                step: 100
 """
     friendly_name=None
     if(group_id != None):
@@ -47,23 +131,29 @@ fields:
     bridge = get_bridge()
 
     group = None
+    match_count = 0
     if(group_id != None):
         for grp in bridge.groups.values():
             if grp.name == friendly_name:
+                match_count = match_count + 1
                 group = grp
+                # _LOGGER.info("Found match: " + grp.name + ", details:")
+                # _LOGGER.info(grp)
     if group is None:
         group = bridge.groups.get_all_lights_group()
-    _LOGGER.debug("Group name: %s",group.name)
+    if match_count > 1:
+        _LOGGER.warning("Found multiple matches with name: " + friendly_name + ", check bridge for e.g. zones with duplicate names")
     scene = None
     for scn in bridge.scenes.values():
+        # _LOGGER.info(scn)
         if scn.id == scene_id:
             scene = scn
     if(scene == None):
         _LOGGER.warning("No scene found with ID: %s",scene_id);
         return;
-    _LOGGER.debug("Scene name: %s",scene.name)
-    group.set_action(scene=scene.id)
-
+    transition = int(round(((transitionhours*60*60)+(transitionmins*60)+(transitionsecs)+(transitionms/1000))*10,0))
+    _LOGGER.debug("Triggering new scene. Group name: " + group.name + ", Scene name: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=transition/10)) + " (will be submitted as: " + str(transition) + ")")
+    group.set_action(scene=scene.id,transitiontime=transition)
 
 @service
 def toggle_room(room_entity):

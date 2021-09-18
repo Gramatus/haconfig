@@ -1,0 +1,41 @@
+# both_date_and_time:
+#   name: Input with both date and time
+#   has_date: true
+#   has_time: true
+# only_date:
+#   name: Input with only date
+#   has_date: true
+#   has_time: false
+huetrans_kveldslys_endtime:
+  name: "LysFade: Slutt Kveldslys"
+  has_date: false
+  has_time: true
+huetrans_kveldslys_starttime:
+  name: "LysFade: Start Kveldslys"
+  has_date: false
+  has_time: true
+huetrans_vekking_endtime:
+  name: "LysFade: Slutt Vekking"
+  has_date: false
+  has_time: true
+huetrans_arbeidslys_endtime:
+  name: "LysFade: Slutt Arbeidslys"
+  has_date: false
+  has_time: true
+
+huetrans_basislys_morgen_endtime:
+  name: "LysFade: Slutt Basislys morgen"
+  has_date: false
+  has_time: true
+huetrans_basislys_dag_endtime:
+  name: "LysFade: Slutt Basislys dag"
+  has_date: false
+  has_time: true
+huetrans_basislys_ettermiddag_endtime:
+  name: "LysFade: Slutt Basislys ettermiddag"
+  has_date: false
+  has_time: true
+huetrans_basislys_kveld_endtime:
+  name: "LysFade: Slutt Basislys kveld"
+  has_date: false
+  has_time: true

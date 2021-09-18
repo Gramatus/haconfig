@@ -10,6 +10,7 @@ www/
 .HA_VERSION
 harmony*.conf
 *.log
+*.log.1
 custom_components/hacs
 custom_components/pyscript/*
 #custom_components/pyscript/*

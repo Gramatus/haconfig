@@ -45,6 +45,17 @@ spotcast:
 
 pyscript: !include pyscript/config.yaml
 
+remote:
+  - platform: harmony
+    name: Stua
+    host: 192.168.50.54
+  - platform: harmony
+    name: Soverom
+    host: 192.168.50.230
+  - platform: harmony
+    name: Gangen
+    host: 192.168.50.181
+
 gramatus:
 # roomtoggles:
 
@@ -55,7 +66,10 @@ tellstick:
 sensor: !include sensors.yaml
 sensor weather: !include weather.yaml
 
+template: !include templates.yaml
+
 input_boolean: !include input_booleans.yaml
+input_datetime: !include input_datetime.yaml
 
 binary_sensor: !include binary_sensors.yaml
 
@@ -80,7 +94,14 @@ logger:
     hue_tools: debug
     fully_actions: debug
     spotify_play: debug
-  #filters:
+    # Disable info logging from automations running all the time (that usually also has custom logging from my scripts if needed)
+    homeassistant.components.automation.termostat_kontoret: warning
+    homeassistant.components.automation.vekking_sikre_lysfade_pa_riktig_tidspunkt: warning
+    homeassistant.components.automation.lysfade_sikre_tid_fra_vekking_til_arbeidslys: warning
+  filters:
+    pychromecast.controllers:
+      - "Receiver:channel_disconnected"
+      - "Receiver:setting volume"
     # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
     # Login from localhost is probably nabu casa
     #homeassistant.components.http.ban:
