@@ -98,6 +98,7 @@ logger:
     homeassistant.components.automation.termostat_kontoret: warning
     homeassistant.components.automation.vekking_sikre_lysfade_pa_riktig_tidspunkt: warning
     homeassistant.components.automation.lysfade_sikre_tid_fra_vekking_til_arbeidslys: warning
+    homeassistant.components.automation.fjernkontroll_reagere_pa_knapp: warning
   filters:
     pychromecast.controllers:
       - "Receiver:channel_disconnected"

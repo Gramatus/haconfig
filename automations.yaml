@@ -233,68 +233,6 @@
     data:
       entity_id: media_player.godehol
   mode: restart
-- id: '1630244619085'
-  alias: 'Vekking_old: på alarmtid'
-  description: ''
-  trigger:
-  - platform: time
-    at: input_datetime.vekking
-  condition: []
-  action:
-  - service: pyscript.play_playlist_random
-    data:
-      playlistid: 5xddIVAtLrZKtt4YGLM1SQ
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 5
-      milliseconds: 0
-  - service: spotcast.start
-    data:
-      entity_id: media_player.godehol
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 15
-      milliseconds: 0
-  - service: media_player.media_play
-    target:
-      entity_id: media_player.spotify_gramatus
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 15
-      milliseconds: 0
-  - service: pyscript.volume_increase
-    data:
-      fadein_seconds: 120
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 5
-      milliseconds: 0
-  - service: remote.turn_on
-    data:
-      activity: Listen to Music
-    target:
-      entity_id: remote.harmony_hub_2
-  mode: restart
-- id: '1630781198461'
-  alias: 'Vekking_old: flytt avspilling til Godehol når alarmen starter'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id: media_player.spotify_gramatus
-    to: playing
-  condition:
-  - condition: state
-    entity_id: input_boolean.vekking_pagar
-    state: 'on'
-  action:
-  - service: spotcast.start
-    data:
-      entity_id: media_player.godehol
-  mode: restart
 - id: '1630781593162'
   alias: Fortsett avspilling når alarmen er slått av
   description: ''
@@ -310,7 +248,7 @@
     type: flash
   mode: single
 - id: '1630784406319'
-  alias: 'Vekking: på alarmtid (ny)'
+  alias: 'Vekking: på alarmtid (lyd)'
   description: ''
   trigger:
   - platform: time
@@ -692,7 +630,7 @@
           - url: https://play-lh.googleusercontent.com/U5LxZ1tqqcOoQk6igbKN6Xu6iFxP7jbsUq5pryhxqfeMNs1NIkF6UsFJS-FbdPOlEg=s180-rw
   mode: single
 - id: '1631983534795'
-  alias: 'Vekking: 30min før alarmtid (starte lysfade)'
+  alias: 'Vekking_old: 30min før alarmtid (starte lysfade)'
   description: ''
   trigger:
   - platform: template
@@ -728,3 +666,30 @@
     data:
       transition_group: Faste lys
   mode: restart
+- id: '1632041943235'
+  alias: 'Vekking: på alarmtid (alltid)'
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.vekking
+  condition:
+  - condition: state
+    entity_id: input_boolean.alarm_aktiv
+    state: 'on'
+  action:
+  - service: pyscript.wakeup_fully
+  mode: restart
+- id: '1632042306713'
+  alias: 'Fjernkontroll: Reagere på knapp'
+  description: ''
+  trigger:
+  - platform: event
+    event_type: roku_command
+  condition: []
+  action:
+  - service: pyscript.remote_action_trigger
+    data:
+      trigger: '{{ trigger }}
+
+        '
+  mode: single
