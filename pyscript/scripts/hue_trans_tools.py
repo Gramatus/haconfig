@@ -109,7 +109,7 @@ description: Ensure that there is enough time from wakeup lights until work ligh
 """
     ensure_fade_diff("input_datetime.huetrans_vekking_endtime", "input_datetime.huetrans_arbeidslys_endtime", 60*60, "Wakeup", "work lights")
     ensure_fade_diff("input_datetime.huetrans_vekking_endtime", "input_datetime.huetrans_basislys_morgen_endtime", -30*60, "Wakeup", "basic lights morning")
-    ensure_fade_diff("input_datetime.huetrans_basislys_morgen_endtime", "input_datetime.huetrans_basislys_dag_endtime", 15*60, "Basic lights morning", "basic lights day")
+    ensure_fade_diff("input_datetime.huetrans_basislys_morgen_endtime", "input_datetime.huetrans_basislys_dag_endtime", 1*60*60+15*60, "Basic lights morning", "basic lights day")
 
 def ensure_fade_diff(entity_id_before, entity_id_after, min_diff, logname_before, logname_after):
     before_endtime = state.getattr(entity_id_before)["timestamp"]
@@ -196,7 +196,7 @@ fields:
                 next_trans_timestamp = starttime
     if next_trans != None:
         _LOGGER.info("Neste fade med " + transition_group + " starter kl. " + next_trans["start_time"])
-        _LOGGER.info(next_trans)
+        _LOGGER.debug(next_trans)
         input_datetime.set_datetime(entity_id="input_datetime.lysfade_start_neste_" + transition_group + "fade",time=next_trans["start_time"])
     else:
         _LOGGER.info("No more transitions scheduled for today for \"" + transition_group + "\"...")
@@ -259,6 +259,22 @@ fields:
 
     scenes = get_scene_to_activate_with_time_and_previous(transition_group)
     _LOGGER.debug(scenes)
+
+    if current_trans["friendly_name"] == "Fadeoppsett: Vekking":
+    # if current_trans["friendly_name"] == "Fadeoppsett: Arbeidslys":
+        alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
+        alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
+        timetotarget = scenes["current"]["timetotarget"]
+        if timetotarget < 0:
+            timetotarget = 0
+        wait_time = timetotarget + 5*60
+        if not alarmActive or not alarmLightActive:
+            if not alarmActive:
+                _LOGGER.info("Alarm is not active, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
+            elif not alarmLightActive:
+                _LOGGER.info("Alarm is active, but without lights, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
+            timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=wait_time)
+            return
 
     force_run = False
     if "force_run" in current_trans:

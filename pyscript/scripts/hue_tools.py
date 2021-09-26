@@ -56,7 +56,7 @@ def start_wakeup_light():
 name: Start wakeup light
 description: Start the wakeup light routine
 """
-    _LOGGER.info("This method is no longer used, returing")
+    _LOGGER.info("This method is no longer used, returning")
     return
     url = 'http://'+pyscript.config["hue_ip"]+'/api/'+pyscript.config["hue_user"]+'/sensors/143/state'
     body = '{"status": 1}'
@@ -152,7 +152,7 @@ fields:
         _LOGGER.warning("No scene found with ID: %s",scene_id);
         return;
     transition = int(round(((transitionhours*60*60)+(transitionmins*60)+(transitionsecs)+(transitionms/1000))*10,0))
-    _LOGGER.debug("Triggering new scene. Group name: " + group.name + ", Scene name: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=transition/10)) + " (will be submitted as: " + str(transition) + ")")
+    _LOGGER.debug("Triggering scene. Group: " + group.name + ", Scene: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=round(transition/10,1))) + " (submitted as: " + str(transition) + ")")
     group.set_action(scene=scene.id,transitiontime=transition)
 
 @service
