@@ -2,7 +2,7 @@
 import logging
 from homeassistant.helpers import entity_platform
 import asyncio
-import playlist_services
+import spotify_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 #data:
 #  playlistid: 2VarjDoOdeWCYjCtLLdkSM
 @service
-async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist", reuse_shuffle=True):
+async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist"):
     """yaml
 name: Play playlist with or without shuffle
 description: Starts playing the playlist in shuffle mode on the "current" playing entity (default is media_player.kjokkenet)
@@ -45,6 +45,7 @@ fields:
     if shuffle_type == "No shuffle":
         shuffle = False
     delay_seconds = 2
+    delay_seconds_start_spotcast = 5
     volume_fade_seconds = 10
     if playlistid == None:
         return
@@ -53,25 +54,30 @@ fields:
     player_attr = state.getattr(device)
     _LOGGER.info("  - Setting volume to 0 for " + player_attr["friendly_name"])
     media_player.volume_set(entity_id=device,volume_level=0)
+    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast")
+    spotcast.start(entity_id=device)
     if shuffle and shuffle_type == "Reuse shadow playlist":
         _LOGGER.info("  - Getting ID for the related shuffled shadow playlist")
-        playlistid, playlist_exists = playlist_services.ensure_shuffle_playlist_exists(playlistid)
+        playlistid, playlist_exists = spotify_services.ensure_shuffle_playlist_exists(playlistid)
         if not playlist_exists:
             shuffle_type = "Update shadow playlist"
     if shuffle and shuffle_type == "Update shadow playlist":
         _LOGGER.info("  - Updating the related shuffled shadow playlist")
-        playlistid = playlist_services.ensure_shuffled_playlist(playlistid)
-    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast")
-    spotcast.start(entity_id=device)
-    _LOGGER.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
-    await asyncio.sleep(delay_seconds)
+        playlistid = spotify_services.ensure_shuffled_playlist(playlistid)
+    else:
+        # If we update the shadow playlist, that should take the required time - if not, we should wait some seconds
+        _LOGGER.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
+        await asyncio.sleep(delay_seconds_start_spotcast)
     _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
-    media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
-    media_player.play_media(entity_id="media_player.spotify_gramatus", media_content_id="spotify:playlist:" + playlistid, media_content_type="playlist")
+    pyscript.play_playlist_at_position(playlistid=playlistid, position=1)
+    # is_playing = state.get("media_player.spotify_gramatus") == "playing"
+    # if is_playing:
+    #media_player.play_media(entity_id="media_player.spotify_gramatus", media_content_id="spotify:playlist:" + playlistid, media_content_type="playlist")
     _LOGGER.info("  - Waiting " + str(delay_seconds) + " more seconds")
     await asyncio.sleep(delay_seconds)
     # _LOGGER.info("Shuffling playlist and then starting volumne increase over " + str(volume_fade_seconds) + " seconds")
     _LOGGER.info(" - Starting volume increase over " + str(volume_fade_seconds) + " seconds")
+    media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
     pyscript.volume_increase(fadein_seconds=volume_fade_seconds, device=device, initial_volume = 0.0, final_volume = 0.9)
 
 @service
@@ -88,7 +94,7 @@ fields:
             text:
 """
     if playlistid is not None:
-        playingEntity = getPlayingEntity()
+        playingEntity, playState = getPlayingEntity()
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
@@ -106,7 +112,7 @@ fields:
             text:
 """
     if playlistid is not None:
-        playingEntity = getPlayingEntity()
+        playingEntity, playState = getPlayingEntity()
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id="media_player.godehol",uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
@@ -127,7 +133,7 @@ fields:
 """
     _LOGGER.debug("TODO: update code for handling episodes in __init__.py for spotcast / fork repository...")
     if showid is not None:
-        playingEntity = getPlayingEntity()
+        playingEntity, playState = getPlayingEntity()
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:show:"+showid)
 
@@ -136,39 +142,9 @@ fields:
 @service
 def play_podcast_episode(episodeid):
     if episodeid is not None:
-        playingEntity = getPlayingEntity()
+        playingEntity, playState = getPlayingEntity()
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:episode:"+episodeid)
-
-@service
-def getPlayingEntity():
-    defaultEntity = "media_player.kjokkenet"
-    inGroup = ['media_player.badet' , 'media_player.fm', 'media_player.kjokkenet', 'media_player.kontoret']
-    playState = "playing"
-    group_state = media_player.Godehol
-    playingEntity = None
-    spotifyDetails = state.getattr(media_player.spotify_gramatus)
-    _LOGGER.debug("Spotify status details: %s",spotifyDetails)
-    try:
-        playingSource = spotifyDetails["source"]
-        _LOGGER.debug("Spotify is playing on: %s",playingSource)
-        allMediaPlayers = state.names(domain="media_player")
-        for mediaPlayer in allMediaPlayers:
-            if state.getattr(mediaPlayer)["friendly_name"] == playingSource:
-                playingEntity = mediaPlayer
-        if playingEntity is not None:
-            _LOGGER.debug("Found entity by friendly name: %s",playingEntity)
-    except Exception as e:
-        _LOGGER.error("Something went wrong:"+str(e))
-
-    _LOGGER.debug("Currently playing entity: %s",playingEntity)
-    if playingEntity is None:
-        _LOGGER.debug("Found no currently playing entity, will start playing on default entity")
-        playingEntity = defaultEntity
-    else:
-        _LOGGER.debug("Will change currently playing content on entity: %s",playingEntity)
-    return playingEntity
-
 
 @service
 def gramatus_test2(entity_id):
@@ -218,7 +194,7 @@ fields:
         selector:
             text:
 """
-    shuffle_playlist_id = playlist_services.ensure_shuffled_playlist(playlistid)
+    shuffle_playlist_id = spotify_services.ensure_shuffled_playlist(playlistid)
     # update_recently_played()
     # shuffle_playlist_id = ensure_shuffle_playlist_exists(playlistid)
     # update_shuffle_playlist(playlistid, shuffle_playlist_id)
@@ -239,3 +215,30 @@ name: Spotify test code
     ensure_shuffle_playlist_exists(playlistid)
     # update_shuffle_playlist("78RaOXPHXD4zJWFRwzbuEI")
     # update_recently_played()
+
+@service
+def play_playlist_at_position(playlistid,position):
+    """yaml
+name: Play playlist and start at the given position
+fields:
+    playlistid:
+        description: ID of the playlist
+        required: true
+        example: 6bA10TtiyuqQP0yEYnrd3X
+        selector:
+            text:
+    position:
+        description: Position to start on
+        required: false
+        example: media_player.spotify_gramatus
+        selector:
+            number:
+                min: 1
+                mode: box
+"""
+    spotify_services.spotify_put("/me/player/play", {
+        "context_uri": "spotify:playlist:"+playlistid,
+        "offset": {
+            "position": position-1
+        }
+    })
