@@ -10,6 +10,37 @@ import datetime
 _LOGGER = logging.getLogger(__name__)
 
 @service
+def fully_set_wifi_off_between(timeoff, timeon, device):
+    """yaml
+name: Fully device WiFi off between
+fields:
+    timeoff:
+        description: Time to turn WiFi off
+        required: true
+        example: 21:10:00
+        selector:
+            time:
+    timeon:
+        description: Time to turn WiFi on
+        required: true
+        example: 21:10:00
+        selector:
+            time:
+    device:
+        description: Device with Fully installed to contact
+        required: true
+        example: fully.nettbrett1
+        selector:
+            entity:
+                domain: fully
+"""
+    ip = state.getattr(device)["ip"]
+    timeOffParts = timeoff.split(":")
+    timeOnParts = timeon.split(":")
+    queryParams = urllib.parse.quote_plus("intent:hourOff:"+timeOffParts[0]+";minuteOff:"+timeOffParts[1]+";hourOn:"+timeOnParts[0]+";minuteOn:"+timeOnParts[1]+"#Intent;launchFlags=0x10000000;component=com.gramatus.torgeirswificontroller/.MainActivity;end")
+    fully_action(ip,"loadUrl","&url="+queryParams)
+
+@service
 def fully_set_wakeup_alarm(playlistID,device):
     """yaml
 name: Set alarm to wakeup
@@ -292,7 +323,10 @@ async def fully_action(ip,action,params=""):
     encoded_url = URL(full_url,encoded=True)
     
     _LOGGER.debug(" > Calling: " + str(encoded_url))
-    async with aiohttp.ClientSession() as session:
-        async with session.get(encoded_url, allow_redirects=False) as response:
-            # _LOGGER.debug(response.url)
-            _LOGGER.debug("Response from fully: Status "+str(response.status)+", reply: "+response.text())
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(encoded_url, allow_redirects=False) as response:
+                # _LOGGER.debug(response.url)
+                _LOGGER.debug("Response from fully: Status " + str(response.status) + ", reply: " + response.text())
+    except Exception as e:
+        _LOGGER.error("Failed to connect to Fully, error: " + str(e))

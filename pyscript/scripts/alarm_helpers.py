@@ -96,17 +96,21 @@ async def good_night():
 name: Good night routine
 description: Set HVAC night settings, lower blinds and turn off lights after one minute
 """
-    _LOGGER.info("Turning on Fully screen")
-    pyscript.fully_turn_on_screen(device="fully.nettbrett1")
+    _LOGGER.info("Turning on Fully screen and bringing Fully to the foreground")
+    wakeup_fully()
     _LOGGER.info("Turning down covers")
     cover.close_cover(entity_id="cover.tradfri_blind")
-    _LOGGER.info("Wait 15 seconds for cover to close")
-    await asyncio.sleep(15)
+    _LOGGER.info("Wait 17 seconds for cover to close")
+    await asyncio.sleep(17)
     _LOGGER.info("Turning on lights temporarily, with a 10 second transition")
     light.turn_on(entity_id="light.soverom",transition=10,kelvin=2000,brightness=30)
     _LOGGER.info("Setting HVAC settings")
     melcloud.set_vane_vertical(entity_id="climate.soverom",position="auto")
     climate.set_temperature(entity_id="climate.soverom",temperature=17.5)
+    turnoff_time = str(datetime.timedelta(seconds=int((datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())+5*60))
+    turnon_time = str(datetime.timedelta(seconds=state.getattr("input_datetime.vekking")["timestamp"]-5*60))
+    _LOGGER.info("Telling Fully to turn off WiFi between " + turnoff_time + " and " + turnon_time)
+    pyscript.fully_set_wifi_off_between(timeoff=turnoff_time, timeon=turnon_time, device="fully.nettbrett1")
     _LOGGER.info("Wait 120 seconds before turning starting to turn the lights off")
     await asyncio.sleep(120)
     _LOGGER.info("Turning off lights with a 60 second transition")
@@ -114,6 +118,16 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
     _LOGGER.info("Turning off Fully screen")
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
     _LOGGER.info("Done")
+
+@service
+def test_wifi_off():
+    #now = datetime.datetime.now()
+    #midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    turnoff_time = str(datetime.timedelta(seconds=int((datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())+5*60))
+    turnon_time = str(datetime.timedelta(seconds=state.getattr("input_datetime.vekking")["timestamp"]-5*60))
+    pyscript.fully_set_wifi_off_between(timeoff=turnoff_time, timeon=turnon_time, device="fully.nettbrett1")
+    _LOGGER.info(turnoff_time)
+    _LOGGER.info(turnon_time)
 
 @service
 async def start_morning():
@@ -138,6 +152,7 @@ description: Finish things in bedroom and prepare downstairs
     _LOGGER.info("Setting volume to 90 %")
     volume_increase(30, "media_player.godehol", final_volume = 0.9)
     _LOGGER.info("Turning off fully screen")
+    pyscript.fully_to_foreground(device="fully.nettbrett1")
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
     _LOGGER.info("Done")
 
@@ -148,7 +163,7 @@ name: Wakeup fully, used for wakeup alarm
 description: Sounding the alarm
 """
     pyscript.fully_turn_on_screen(device="fully.nettbrett1")
-
+    pyscript.fully_to_foreground(device="fully.nettbrett1")
 
 @service
 async def wakeup_alarm():
