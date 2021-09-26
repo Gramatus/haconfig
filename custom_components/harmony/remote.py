@@ -82,6 +82,10 @@ class HarmonyRemote(HarmonyEntity, remote.RemoteEntity, RestoreEntity):
     def __init__(self, data, activity, delay_secs, out_path):
         """Initialize HarmonyRemote class."""
         super().__init__(data=data)
+        _LOGGER.info("Torgeir: Remote.py")
+        _LOGGER.info(data)
+        _LOGGER.info("Name: " + data.name)
+        _LOGGER.info("unique_id: " + data.unique_id)
         self._state = None
         self._current_activity = ACTIVITY_POWER_OFF
         self.default_activity = activity

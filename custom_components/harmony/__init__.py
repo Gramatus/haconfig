@@ -1,6 +1,7 @@
 """The Logitech Harmony Hub integration."""
 import asyncio
 import logging
+import json
 
 from homeassistant.components.remote import ATTR_ACTIVITY, ATTR_DELAY_SECS
 from homeassistant.config_entries import ConfigEntry
@@ -31,9 +32,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # they are missing from the options
     _async_import_options_from_data_if_missing(hass, entry)
 
+    _LOGGER.info("Torgeir: __init__.py")
+
     address = entry.data[CONF_HOST]
     name = entry.data[CONF_NAME]
     data = HarmonyData(hass, address, name, entry.unique_id)
+    _LOGGER.info("address" + str(address))
+    _LOGGER.info("name" + str(name))
+    _LOGGER.info("unique_id" + str(entry.unique_id))
     try:
         connected_ok = await data.connect()
     except (asyncio.TimeoutError, ValueError, AttributeError) as err:

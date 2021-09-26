@@ -1,6 +1,7 @@
 """Config flow for Logitech Harmony Hub integration."""
 import logging
 from urllib.parse import urlparse
+import json
 
 import voluptuous as vol
 
@@ -34,6 +35,7 @@ async def validate_input(data):
     Data has the keys from DATA_SCHEMA with values provided by the user.
     """
     harmony = await get_harmony_client_if_available(data[CONF_HOST])
+    # _LOGGER.info(json.dumps(harmony))
     if not harmony:
         raise CannotConnect
 
