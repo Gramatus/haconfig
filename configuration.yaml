@@ -45,17 +45,6 @@ spotcast:
 
 pyscript: !include pyscript/config.yaml
 
-remote:
-  - platform: harmony
-    name: Stua
-    host: 192.168.50.54
-  - platform: harmony
-    name: Soverom
-    host: 192.168.50.230
-  - platform: harmony
-    name: Gangen
-    host: 192.168.50.181
-
 gramatus:
 # roomtoggles:
 
@@ -83,6 +72,7 @@ logger:
     homeassistant.components.cast: warn
     homeassistant.components.cast.media_player: warn
     custom_components.spotcast: warn
+    custom_components.harmony: debug
     coap: warn
     homeassistant.components.auth: debug
     homeassistant.components.http.ban: debug
