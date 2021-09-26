@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import datetime
-import playlist_services
+import spotify_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,8 +100,8 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
     wakeup_fully()
     _LOGGER.info("Turning down covers")
     cover.close_cover(entity_id="cover.tradfri_blind")
-    _LOGGER.info("Wait 17 seconds for cover to close")
-    await asyncio.sleep(17)
+    _LOGGER.info("Wait 16 seconds for cover to close")
+    await asyncio.sleep(16)
     _LOGGER.info("Turning on lights temporarily, with a 10 second transition")
     light.turn_on(entity_id="light.soverom",transition=10,kelvin=2000,brightness=30)
     _LOGGER.info("Setting HVAC settings")
@@ -185,7 +185,7 @@ description: Sounding the alarm
     await asyncio.sleep(5)
     increase_time = 60
     _LOGGER.info("Shuffling playlist, turning on sound system and starting volumne increase over " + str(increase_time) + " seconds")
-    media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=True)
+    media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False)
     remote.turn_on(entity_id="remote.harmony_hub_soverom",activity="Listen to Music")
     volume_increase(increase_time, "media_player.godehol", initial_volume = 0.0, final_volume = 0.5)
     _LOGGER.info("Done: Wakeup routine")
@@ -207,8 +207,8 @@ fields:
                     - "Lovsang"
 """
     playlistid = playlist_mapping[playlist]
-    shuffleplaylistid = playlist_services.ensure_shuffled_playlist(playlistid)
-    input_text.set_value(entity_id="input_text.vekking_spilleliste_id", value=playlist_mapping[playlist])
+    shuffleplaylistid = spotify_services.ensure_shuffled_playlist(playlistid)
+    input_text.set_value(entity_id="input_text.vekking_spilleliste_id", value=shuffleplaylistid)
     input_select.select_option(entity_id="input_select.vekking_valgt_spilleliste", option=playlist)
     _LOGGER.info("Updated shuffle shadow playlist. Now setting selected playlist for wakeup to: \"" + playlist + "\" (original id: \"" + playlistid + "\", shuffle playlist id: \"" + shuffleplaylistid + "\")")
 
