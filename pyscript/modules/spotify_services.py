@@ -138,6 +138,26 @@ async def spotify_post(relative_url, json_data, return_response=False):
             if return_response:
                 return response.json()
 
+async def spotify_put(relative_url, json_data, return_response=False):
+    ensure_token_valid()
+    full_url = "https://api.spotify.com/v1" + relative_url
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+    }
+    async with aiohttp.ClientSession() as session:
+        encoded_url = URL(full_url,encoded=True)
+        async with session.put(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            resp_text = response.text()
+            if len(resp_text) < 200:
+                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
+            else:
+                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status))
+                _LOGGER.info("Response: " + resp_text)
+            if return_response:
+                return response.json()
+
 async def spotify_delete(relative_url, json_data):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
@@ -316,6 +336,6 @@ def ensure_shuffle_playlist_exists(playlistid):
 
 def ensure_shuffled_playlist(playlistid):
     update_recently_played()
-    shuffle_playlist_id = ensure_shuffle_playlist_exists(playlistid)
+    shuffle_playlist_id, playlist_exists = ensure_shuffle_playlist_exists(playlistid)
     update_shuffle_playlist(playlistid, shuffle_playlist_id)
     return shuffle_playlist_id
