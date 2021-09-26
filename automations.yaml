@@ -42,13 +42,13 @@
   description: ''
   trigger:
   - platform: state
-    entity_id: remote.harmony_hub
+    entity_id: remote.harmony_hub_stua
     attribute: current_activity
   condition:
   - condition: not
     conditions:
     - condition: state
-      entity_id: remote.harmony_hub
+      entity_id: remote.harmony_hub_stua
       state: Home Assistant
       attribute: current_activity
   action:
@@ -179,7 +179,7 @@
       entity_id: input_boolean.vekking_pagar
   - service: remote.turn_off
     target:
-      entity_id: remote.harmony_hub_2
+      entity_id: remote.harmony_hub_soverom
   - service: climate.turn_off
     target:
       entity_id: climate.soverom
@@ -415,7 +415,7 @@
   - service: remote.send_command
     target:
       entity_id:
-      - remote.harmony_hub_3
+      - remote.harmony_hub_gangen
     data:
       device: JVC Mini System
       command: PowerToggle
@@ -438,7 +438,7 @@
   - service: remote.send_command
     target:
       entity_id:
-      - remote.harmony_hub_3
+      - remote.harmony_hub_gangen
     data:
       device: '75887078'
       command: PowerOff
@@ -463,7 +463,7 @@
       device: Yamaha AV Receiver
       command: PowerToggle
     target:
-      entity_id: remote.harmony_hub
+      entity_id: remote.harmony_hub_stua
   - type: toggle
     device_id: 7d62068a7364803a9ff5c1f520dacaab
     entity_id: light.hue_smart_plug_1
@@ -486,7 +486,7 @@
       device: Teac Home Theater
       command: PowerToggle
     target:
-      entity_id: remote.harmony_hub_2
+      entity_id: remote.harmony_hub_soverom
   mode: single
 - id: '1631467441105'
   alias: 'Musikk: På anlegg bad'
@@ -508,7 +508,7 @@
   - service: remote.send_command
     target:
       entity_id:
-      - remote.harmony_hub_3
+      - remote.harmony_hub_gangen
     data:
       device: '75887078'
       command: PowerOn
