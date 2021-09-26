@@ -85,7 +85,7 @@ fields:
 # Alternate script:
 # service: remote.send_command
 # target:
-#   entity_id: remote.harmony_hub_2
+#   entity_id: remote.harmony_hub_soverom
 # data:
 #   command: PowerToggle
 #   device: 75674802
@@ -148,7 +148,7 @@ description: Finish things in bedroom and prepare downstairs
     _LOGGER.info("Wait 30 seconds before turning off the sound")
     await asyncio.sleep(30)
     _LOGGER.info("Turning off the sound")
-    remote.turn_off(entity_id="remote.harmony_hub_2")
+    remote.turn_off(entity_id="remote.harmony_hub_soverom")
     _LOGGER.info("Setting volume to 90 %")
     volume_increase(30, "media_player.godehol", final_volume = 0.9)
     _LOGGER.info("Turning off fully screen")
@@ -186,7 +186,7 @@ description: Sounding the alarm
     increase_time = 60
     _LOGGER.info("Shuffling playlist, turning on sound system and starting volumne increase over " + str(increase_time) + " seconds")
     media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=True)
-    remote.turn_on(entity_id="remote.harmony_hub_2",activity="Listen to Music")
+    remote.turn_on(entity_id="remote.harmony_hub_soverom",activity="Listen to Music")
     volume_increase(increase_time, "media_player.godehol", initial_volume = 0.0, final_volume = 0.5)
     _LOGGER.info("Done: Wakeup routine")
 
