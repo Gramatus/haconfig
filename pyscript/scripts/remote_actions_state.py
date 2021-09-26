@@ -1,30 +1,25 @@
 # Excel converter: ="    """&A3&""": {"&TEGNKODE(13)&"        ""roku_instance"": """&$B$1&""","&TEGNKODE(13)&"        ""roku_command"": """&B3&""","&TEGNKODE(13)&"        ""action"": "&HVIS(ERTOM(C3);"None";""""&C3&"""")&""&TEGNKODE(13)&"    },"
 
 state.persist("pyscript.remote_mapping","", {
-    "Up": {
-        "roku_instance": "Home Assistant Pi",
+    "Rød": {
+        "roku_instance": "Home Assistant 2",
         "roku_command": "Up",
-        "action": None
+        "action": "Anlegg kjøkken av/på"
     },
-    "Up": {
-        "roku_instance": "Home Assistant Pi",
-        "roku_command": "Up",
-        "action": None
-    },
-    "Right": {
-        "roku_instance": "Home Assistant Pi",
+    "Grønn": {
+        "roku_instance": "Home Assistant 2",
         "roku_command": "Right",
-        "action": None
+        "action": "Anlegg bad av/på"
     },
-    "Down": {
-        "roku_instance": "Home Assistant Pi",
+    "Gul": {
+        "roku_instance": "Home Assistant 2",
         "roku_command": "Down",
-        "action": None
+        "action": "Anlegg stue av/på"
     },
-    "Left": {
-        "roku_instance": "Home Assistant Pi",
+    "Blå": {
+        "roku_instance": "Home Assistant 2",
         "roku_command": "Left",
-        "action": None
+        "action": "Anlegg soverom av/på"
     },
     "DVR": {
         "roku_instance": "Home Assistant Pi",
@@ -57,6 +52,60 @@ state.persist("pyscript.remote_mapping","", {
         "harmony_command": "OK",
         "action": None
     },
+    "VolUp": {
+        "roku_instance": None,
+        "roku_command": None,
+        "action": None,
+        "comment": "Used by Harmony"
+    },
+    "VolDown": {
+        "roku_instance": None,
+        "roku_command": None,
+        "action": None,
+        "comment": "Used by Harmony"
+    },
+    "Up": {
+        "roku_instance": "Home Assistant Pi",
+        "roku_command": "Up",
+        "action": None
+    },
+    "Right": {
+        "roku_instance": "Home Assistant Pi",
+        "roku_command": "Right",
+        "action": None
+    },
+    "Down": {
+        "roku_instance": "Home Assistant Pi",
+        "roku_command": "Down",
+        "action": None
+    },
+    "Left": {
+        "roku_instance": "Home Assistant Pi",
+        "roku_command": "Left",
+        "action": None
+    },
+    "OK": {
+        "roku_instance": "Home Assistant 2",
+        "roku_command": "Select",
+        "harmony_command": "OK",
+        "action": None
+    },
+    "ChPgUp": {
+        "roku_instance": None,
+        "roku_command": None,
+        "action": None
+    },
+    "ChPgDown": {
+        "roku_instance": None,
+        "roku_command": None,
+        "action": None
+    },
+    "Mute": {
+        "roku_instance": None,
+        "roku_command": None,
+        "action": None,
+        "comment": "Used by Harmony"
+    },
     "Back": {
         "roku_instance": "Home Assistant Pi",
         "roku_command": "Back",
@@ -70,38 +119,28 @@ state.persist("pyscript.remote_mapping","", {
     "Play": {
         "roku_instance": "Home Assistant Pi",
         "roku_command": "Play",
-        "action": "Play/pause Spotify"
+        "action": "Play media"
     },
     "Fwd": {
         "roku_instance": "Home Assistant Pi",
         "roku_command": "Fwd",
         "action": "Neste på Spotify"
     },
-    "Rød": {
-        "roku_instance": "Home Assistant 2",
-        "roku_command": "Up",
-        "action": "Anlegg kjøkken av/på"
+    "Rec": {
+        "roku_instance": "Home Assistant 3",
+        "roku_command": "Search",
+        "action": None
     },
-    "Grønn": {
-        "roku_instance": "Home Assistant 2",
-        "roku_command": "Right",
-        "action": "Anlegg bad av/på"
+    "Pause": {
+        "roku_instance": "Home Assistant 3",
+        "roku_command": "Play",
+        "action": "Pause media"
     },
-    "Gul": {
-        "roku_instance": "Home Assistant 2",
-        "roku_command": "Down",
-        "action": "Anlegg stue av/på"
-    },
-    "Blå": {
-        "roku_instance": "Home Assistant 2",
-        "roku_command": "Left",
-        "action": "Anlegg soverom av/på"
-    },
-    "OK": {
-        "roku_instance": "Home Assistant 2",
+    "Stop": {
+        "roku_instance": "Home Assistant 3",
         "roku_command": "Select",
         "harmony_command": "OK",
-        "action": None
+        "action": "Stop media"
     },
     "1": {
         "roku_instance": "Home Assistant 2",
@@ -111,46 +150,56 @@ state.persist("pyscript.remote_mapping","", {
     "2": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "InstantReplay",
-        "action": None
+        "action": "Spill Kristne gromlåter"
     },
     "3": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Home",
-        "action": None
+        "action": "Spill Classical essentials"
     },
     "4": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Info",
-        "action": None
+        "action": "Spill Bluesfavoritter"
     },
     "5": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Backspace",
-        "action": None
+        "action": "Spill Night blues"
     },
     "6": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Back",
-        "action": None
+        "action": "Spill Jazz Guitar"
     },
     "7": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Rev",
-        "action": None
+        "action": "Spill 90's Country"
     },
     "8": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Search",
-        "action": None
+        "action": "Spill Visefavoritter"
     },
     "9": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Fwd",
         "action": None
     },
+    "--": {
+        "roku_instance": "Home Assistant 3",
+        "roku_command": "Fwd",
+        "action": None
+    },
     "0": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Search (fix)",
+        "action": None
+    },
+    "E": {
+        "roku_instance": "Home Assistant 3",
+        "roku_command": "Rev",
         "action": None
     }
 })
