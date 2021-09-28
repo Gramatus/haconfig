@@ -693,3 +693,50 @@
 
         '
   mode: single
+- id: '1632823814300'
+  alias: 'Lysfade: Faste lys - neste fade'
+  description: ''
+  trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.lysfade_neste_trigger_fastelys
+  condition: []
+  action:
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  - service: pyscript.trigger_transition_scene
+    data:
+      transition_group: Faste lys
+  mode: restart
+- id: '1632860506560'
+  alias: 'Lysfade: Fange opp at lyset blir skrudd på'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: light.stue
+    to: 'on'
+  - platform: state
+    entity_id: light.gang_nede
+    to: 'on'
+  - platform: state
+    entity_id: light.kontor
+    to: 'on'
+  - platform: state
+    entity_id: light.bad
+    to: 'on'
+  - platform: state
+    entity_id: light.kjokken
+    to: 'on'
+  condition: []
+  action:
+  - service: pyscript.run_trans_for_turned_on_room
+    data:
+      trigger: '{{ trigger }}
+
+        '
+  mode: parallel
+  max: 10
