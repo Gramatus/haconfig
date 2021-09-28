@@ -7,7 +7,9 @@ _LOGGER = logging.getLogger(__name__)
 
 playlist_mapping = {
     "Våkneliste": "3FVKcokzHla6424Cj74LzL",
-    "Lovsang": "0dUdJSf4v753IJwv8xDThH"
+    "Lovsang": "0dUdJSf4v753IJwv8xDThH",
+    "Alle gromlåter": "2pjB7wGkkoG9VYY8enMR5b",
+    "90's Country": "37i9dQZF1DWVpjAJGB70vU"
 }
 
 @service
@@ -153,6 +155,7 @@ description: Finish things in bedroom and prepare downstairs
     volume_increase(30, "media_player.godehol", final_volume = 0.9)
     _LOGGER.info("Turning off fully screen")
     pyscript.fully_to_foreground(device="fully.nettbrett1")
+    await asyncio.sleep(5)
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
     _LOGGER.info("Done")
 
@@ -205,6 +208,8 @@ fields:
                 options:
                     - "Våkneliste"
                     - "Lovsang"
+                    - "Alle gromlåter"
+                    - "90's Country"
 """
     playlistid = playlist_mapping[playlist]
     shuffleplaylistid = spotify_services.ensure_shuffled_playlist(playlistid)
