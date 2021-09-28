@@ -13,6 +13,7 @@ import datetime
 import operator
 import copy
 import asyncio
+import re
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +40,10 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
     if "starttime_entity" in current_trans and "endtime_entity" in current_trans:
         seconds_to_complete_trans = 0
         for scn in current_trans["Scenes"]:
-            seconds_to_complete_trans = seconds_to_complete_trans + scn["timeinseconds"]
+            delay = 0
+            if "delay" in scn:
+                delay = scn["delay"]
+            seconds_to_complete_trans = seconds_to_complete_trans + scn["timeinseconds"] + delay
         start = state.getattr("input_datetime." + current_trans["starttime_entity"])["timestamp"]
         end = state.getattr("input_datetime." + current_trans["endtime_entity"])["timestamp"]
         seconds_start_to_end = end - start
@@ -56,17 +60,36 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
             break
         scene_that_should_be_active = copy.copy(scn)
         scene_time = scn["timeinseconds"] * time_factor
+        delay = 0
+        if "delay" in scn:
+            delay = scn["delay"]
         # Max allowed time from Hue is 65535 * 100ms, i.e. 1:49:13, so we limit to that (anything getting above that will change the "ratios", but that is acceptable)
         if scene_time > 65535/10:
             _LOGGER.info("Wanted run time makes this scene run longer that 1:49:13 (max from Hue), so run time is truncated. Wanted run time for \"" + scn["name"] + "\": " + str(datetime.timedelta(seconds=scene_time)))
             scene_time = 65535/10
-        seconds_for_remaining_scenes += scene_time
+        seconds_for_remaining_scenes += scene_time + delay
         scene_that_should_be_active["normaltimeinseconds"] = scene_time
         scene_that_should_be_active["timetotarget"] = seconds_to_target
         scene_that_should_be_active["normaltimetotarget"] = seconds_for_remaining_scenes
-        scene_that_should_be_active["timeinseconds"] = scene_time - (seconds_for_remaining_scenes - seconds_to_target)
+        elapsed_time_for_current_scene = seconds_for_remaining_scenes - seconds_to_target
+        corrected_delay = delay - elapsed_time_for_current_scene
+        if corrected_delay < 0:
+            # Scene has already used up all available delay time (which normally is zero, so normally it is used up from the start)
+            scene_that_should_be_active["timeinseconds"] = scene_time + corrected_delay
+            corrected_delay = 0
+        else:
+            # There is still delay time "available", and thus the transition time should be the complete time expected for the scene
+            scene_that_should_be_active["timeinseconds"] = scene_time
+        scene_that_should_be_active["delay"] = corrected_delay
+        # _LOGGER.info("scene_time: " + str(scene_time))
+        # _LOGGER.info("elapsed_time_for_current_scene: " + str(elapsed_time_for_current_scene))
+        _LOGGER.info("corrected_delay: " + str(scene_that_should_be_active["delay"]) + ", timeinseconds: " + str(scene_that_should_be_active["timeinseconds"]))
+        # _LOGGER.info("timeinseconds: " + str(scene_that_should_be_active["timeinseconds"]))
         if(seconds_for_remaining_scenes > seconds_to_target):
             target_found = True
+    if seconds_to_target < 0:
+        previous_scene = scene_that_should_be_active
+        seconds_for_remaining_scenes = 0
     start_time = str(datetime.timedelta(seconds=seconds_to_target_from_midnight-seconds_for_remaining_scenes))
     final_endtime = str(datetime.timedelta(seconds=seconds_to_target_from_midnight))
     if target_found == False:
@@ -184,7 +207,10 @@ fields:
                 continue
             seconds_to_complete_trans = 0
             for scn in data["Scenes"]:
-                seconds_to_complete_trans = seconds_to_complete_trans + scn["timeinseconds"]
+                delay = 0
+                if "delay" in scn:
+                    delay = scn["delay"]
+                seconds_to_complete_trans = seconds_to_complete_trans + scn["timeinseconds"] + delay
             endtime = state.getattr("input_datetime." + data["endtime_entity"])["timestamp"]
             starttime = endtime-seconds_to_complete_trans
             if "starttime_entity" in data:
@@ -231,7 +257,7 @@ fields:
 # - Set time to next light as a value somewhere
 # - Trigger this based on a timer that this thing starts
 @service
-def trigger_transition_scene(transition_group):
+def trigger_transition_scene(transition_group, only_for_room=None):
     """yaml
 name: Trigger next transition scene
 description: >
@@ -249,18 +275,31 @@ fields:
                 options:
                     - "Hoved"
                     - "Faste lys"
+    only_for_room:
+        description: If this should only run for the selected rooms
+        required: false
+        example: hoved
+        selector:
+            entity:
+                domain: pyscript
+                device_class: trans_room
 """
     transition_group = transition_group.lower().replace(" ","")
     current_trans = get_current_trans(transition_group)
+    if only_for_room != None:
+        only_for_room_attr = state.getattr(only_for_room)
+        if "entity_id" in only_for_room_attr:
+            only_for_room = only_for_room_attr["entity_id"]
+        _LOGGER.info("Will ONLY run for the following rooms on this run: " + only_for_room)
 
     if current_trans == None:
         _LOGGER.info("No transition currently active")
         return
 
     scenes = get_scene_to_activate_with_time_and_previous(transition_group)
-    _LOGGER.debug(scenes)
+    _LOGGER.info(scenes)
 
-    if current_trans["friendly_name"] == "Fadeoppsett: Vekking":
+    if current_trans["friendly_name"] == "Fadeoppsett: Vekking" and scenes["current"] != None:
     # if current_trans["friendly_name"] == "Fadeoppsett: Arbeidslys":
         alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
         alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
@@ -280,22 +319,25 @@ fields:
     if "force_run" in current_trans:
         force_run = current_trans["force_run"]
 
+    prefade_duration = int(float(state.get("input_number.lysfade_prefade_varighet")))
+
     needs_prefade = False
     has_finished = False
     if(scenes["current"] == None):
         return
+    ignore_currentscene = False
     if scenes["current"]["timetotarget"] < 0:
         # This should only happen when a light is turned on after end time (e.g. when coming home after the normal end of transition)
         has_finished = True
         # Do a quick transition to the right state. At this point, previous and current are the same. We update data for "previous" because that is what is used in the next bit and that saves us some logic later.
         scenes["previous"]["loginfo"]  = "Past target time, quickly restoring correct light: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"]))
-        scenes["previous"]["timeinseconds"] = 60
+        scenes["previous"]["timeinseconds"] = prefade_duration
     elif scenes["current"]["index"] != scenes["previous"]["index"] and (scenes["current"]["normaltimetotarget"]-scenes["current"]["timetotarget"]) > 300:
         # We are currently not at the first scene in the transition. If any room is not currently already on it's way to the correct scene, switch to that one first. However, only do this if we are more than five minutes after the original start time.
         needs_prefade = True
         #_LOGGER.info("Quickly starting previous scene: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"])))
         scenes["previous"]["loginfo"] = "Quickly starting previous scene: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"]))
-        scenes["previous"]["timeinseconds"] = 60
+        scenes["previous"]["timeinseconds"] = prefade_duration
 
     # Let there be a 2 second wait between each call, to avoid the bridge being overloaded
     delay_between_triggers = 2
@@ -303,8 +345,12 @@ fields:
     anything_activated = False
     if needs_prefade or has_finished:
         for room in current_trans["Rooms"]:
+            if only_for_room != None:
+                ignore_currentscene = True
+                if only_for_room != room:
+                    continue
             delay = delay + delay_between_triggers
-            scene_activated = trigger_for_room_if_active(room, scenes["previous"], scenes["current"]["id"], delay)
+            scene_activated = trigger_for_room_if_active(room, scenes["previous"], scenes["current"]["id"], delay, ignore_currentscene=ignore_currentscene)
             if scene_activated:
                 anything_activated = True
             await asyncio.sleep(delay_between_triggers)
@@ -316,27 +362,30 @@ fields:
 
     if anything_activated:
         # TODO: Consider if we should skip waiting when no scenes are active, or if that is not needed? Note: if this happens, nothing will happen later on as well, so it is really not so important (except if some rooms are correct and some not?)
-        _LOGGER.info("Waiting 60 seconds for the previous scene to load")
-        await asyncio.sleep(60)
+        _LOGGER.info("Waiting " + prefade_duration + " seconds for the previous scene to load")
+        await asyncio.sleep(prefade_duration)
         _LOGGER.info("Now loading the actual scene")
     lysfade_settings = state.getattr("pyscript.transtools_settings")
     _LOGGER.info("Next scene: \"" + scenes["current"]["name"] + "\", no. " + str(scenes["current"]["index"]) + " of " + str(len(current_trans["Scenes"])))
     delay = 0
     for room in current_trans["Rooms"]:
+        if only_for_room != None and only_for_room != room:
+            continue
         trigger_for_room_if_active(room, scenes["current"], scenes["current"]["id"], delay, force_run)
         delay = delay + delay_between_triggers
         await asyncio.sleep(delay_between_triggers)
 
-    state.setattr("pyscript.transtools_settings.currentScene", {
+    # This is just "FYI", not used for anything, but it could be useful in debugging...
+    state.setattr("pyscript.transtools_settings.currentScene_" + transition_group, {
         "name": scenes["current"]["name"],
         "id": scenes["current"]["id"],
         "parentTrans": current_trans
     })
-    duration = round(scenes["current"]["timeinseconds"],0)
+    duration = round(scenes["current"]["timeinseconds"] + scenes["current"]["delay"], 0)
     _LOGGER.info("Starting timer to trigger next scene in: " + str(datetime.timedelta(seconds=duration)))
     timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=duration-delay)
 
-def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=False):
+def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=False, ignore_currentscene=False):
     # _LOGGER.info("Next room: " + room_entity)
     room_key = room_entity.replace(".","_")
     lysfade_settings = state.getattr("pyscript.transtools_settings")
@@ -355,8 +404,8 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
 
     lights_on = state.get(room_entity) == "on"
     trans_active = roomsettings["trans_active"]
-    already_at_scene = roomsettings["currentScene"] == targetid
-    duration = round(scn["timeinseconds"] - delay, 0)
+    already_at_scene = roomsettings["currentScene"] == targetid and not ignore_currentscene
+    transition_time = round(scn["timeinseconds"] - delay, 0)
     if force_run:
         lights_on = True
         trans_active = True
@@ -367,13 +416,13 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
     elif lights_on and trans_active:
         debug_info = ""
         if state.get("pyscript.transtools_debugmode") != "on":
-            pyscript.turn_on_scene_by_id(scene_id=scn["id"],group_id=room_entity,transitionsecs=duration)
+            pyscript.turn_on_scene_by_id(scene_id=scn["id"], group_id=room_entity, transitionsecs=transition_time, transitionms=0)
         else:
             debug_info = "DEBUG MODE, skipping: "
         if "loginfo" in scn:
             _LOGGER.info(debug_info + scn["loginfo"])
         else:
-            _LOGGER.info("  > " + room_entity + ":" + debug_info + " Triggering scene \"" + scn["name"] + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(duration) + " seconds")
+            _LOGGER.info("  > " + room_entity + ":" + debug_info + " Triggering scene \"" + scn["name"] + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
         roomsettings["currentScene"] = scn["id"]
         roomsettings["currentSceneName"] = scn["name"]
         scene_activated = True
@@ -389,9 +438,9 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
     fadeend_entity = room_prefix + room_key + "_fadeend"
     transactive_entity = room_prefix + room_key + "_trans_active"
     if scene_activated:
-        state.setattr(fadeend_entity+".duration",str(datetime.timedelta(seconds=duration)))
+        state.setattr(fadeend_entity+".duration",str(datetime.timedelta(seconds=transition_time)))
         state.setattr(fadeend_entity+".start_time",datetime.datetime.now().isoformat())
-        state.setattr(fadeend_entity+".end_time",(datetime.datetime.now() + datetime.timedelta(0,duration)).isoformat())
+        state.setattr(fadeend_entity+".end_time",(datetime.datetime.now() + datetime.timedelta(0,transition_time)).isoformat())
         state.set(fadeend_entity,"active")
         state.setattr(fadeend_entity+".friendly_name", room_name + ": til \"" + scn["name"] + "\"")
 
@@ -421,3 +470,31 @@ fields:
     else:
         _LOGGER.info("Set state to on for: " + room)
         state.set(room,"on")
+
+@service
+def run_trans_for_turned_on_room(trigger):
+    """yaml
+name: Activate "current" transition for a room where the lights just turned on
+fields:
+    trigger:
+        description: Trigger data from an automation
+        required: true
+"""
+    trigger = str(trigger)
+    trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\g<1>,\g<3>',trigger)
+    comma_replacement = ";;;"
+    for item in re.findall("\[[^]]*\]", trigger):
+        trigger = trigger.replace(item,item.replace(",", comma_replacement))
+    for item in re.findall("\([^)]*\)", trigger):
+        trigger = trigger.replace(item,item.replace(",", comma_replacement))
+    trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
+    trigger = trigger.replace(comma_replacement, ",")
+    trigger = re.compile("( <state)([^>]*)(>)").sub('{\g<2>}',trigger)
+    trigger = trigger.replace("\":\"[","\": [")
+    trigger = trigger.replace("]\",","],")
+    trigger = trigger.replace("'","\"")
+    trigger = trigger.replace(" None"," null")
+    # Load the JSON object and then get the event data
+    trigger_data = json.loads(trigger)
+    _LOGGER.info("Entity that triggered the automation: " + trigger_data["entity_id"])
+    trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])

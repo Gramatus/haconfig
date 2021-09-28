@@ -78,7 +78,8 @@ state.persist(state_prefix+"_hoved_vekking","off",{
             "name": "Kveldsrød 1 %",
             "bridgeName": "FadeVekking !start",
             "id": "PlnpsZgSQpM4Wuf",
-            "timeinseconds": (0*60)+(10)
+            "timeinseconds": (0*60)+(10),
+            "delay": 1*60
         },
         {
             "index": 2,
@@ -236,4 +237,9 @@ for room in all_rooms:
     state.persist(room_prefix + room.replace(".","_") + "_trans_active","true",{
         "friendly_name": room + ": lys skal fade",
         "device_class": "trans_active"
+    })
+    state.persist(room_prefix + room.replace(".","_"),"n/a",{
+        "friendly_name": state.getattr(room)["friendly_name"],
+        "device_class": "trans_room",
+        "entity_id": room
     })
