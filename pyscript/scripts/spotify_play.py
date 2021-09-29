@@ -206,13 +206,13 @@ def spotify_test():
 name: Spotify test code
 """
     # truncate_playlist("6bA10TtiyuqQP0yEYnrd3X")
-    # update_shuffle_playlist("2pjB7wGkkoG9VYY8enMR5b","6bA10TtiyuqQP0yEYnrd3X")
+    spotify_services.update_shuffle_playlist("2pjB7wGkkoG9VYY8enMR5b","6bA10TtiyuqQP0yEYnrd3X")
     # update_shuffle_playlist("3FVKcokzHla6424Cj74LzL","52w4nPUOmgaal2IMdL6Cqk")
-    playlistid = "78RaOXPHXD4zJWFRwzbuEI" # TP 23.5.19
-    playlistid = "2pjB7wGkkoG9VYY8enMR5b" # Alle gromlåter
-    playlistid = "3FVKcokzHla6424Cj74LzL" # Min våkneliste
-    playlist = spotify_get("/playlists/" + playlistid, False)
-    ensure_shuffle_playlist_exists(playlistid)
+    # playlistid = "78RaOXPHXD4zJWFRwzbuEI" # TP 23.5.19
+    # playlistid = "2pjB7wGkkoG9VYY8enMR5b" # Alle gromlåter
+    # playlistid = "3FVKcokzHla6424Cj74LzL" # Min våkneliste
+    # playlist = spotify_get("/playlists/" + playlistid, False)
+    # ensure_shuffle_playlist_exists(playlistid)
     # update_shuffle_playlist("78RaOXPHXD4zJWFRwzbuEI")
     # update_recently_played()
 
