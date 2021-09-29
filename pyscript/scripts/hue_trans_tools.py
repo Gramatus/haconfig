@@ -290,7 +290,13 @@ fields:
         only_for_room_attr = state.getattr(only_for_room)
         if "entity_id" in only_for_room_attr:
             only_for_room = only_for_room_attr["entity_id"]
+        # If we are currently running a transition, don't run the "single room" action (it is probably triggered by the transition actually turning on the lights)
+        if state.get("lysfade_aktiv_trans_trigger_" + transition_group) == "active":
+            _LOGGER.info("Skipping only_for_room run for: " + only_for_room)
+            return
         _LOGGER.info("Will ONLY run for the following rooms on this run: " + only_for_room)
+    else:
+        timer.start(entity_id="timer.lysfade_aktiv_trans_trigger_" + transition_group)
 
     if current_trans == None:
         _LOGGER.info("No transition currently active")
