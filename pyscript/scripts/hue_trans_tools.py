@@ -291,7 +291,7 @@ fields:
         if "entity_id" in only_for_room_attr:
             only_for_room = only_for_room_attr["entity_id"]
         # If we are currently running a transition, don't run the "single room" action (it is probably triggered by the transition actually turning on the lights)
-        if state.get("lysfade_aktiv_trans_trigger_" + transition_group) == "active":
+        if state.get("timer.lysfade_aktiv_trans_trigger_" + transition_group) == "active":
             _LOGGER.info("Skipping only_for_room run for: " + only_for_room)
             return
         _LOGGER.info("Will ONLY run for the following rooms on this run: " + only_for_room)
@@ -305,21 +305,11 @@ fields:
     scenes = get_scene_to_activate_with_time_and_previous(transition_group)
     _LOGGER.info(scenes)
 
-    if current_trans["friendly_name"] == "Fadeoppsett: Vekking" and scenes["current"] != None:
-    # if current_trans["friendly_name"] == "Fadeoppsett: Arbeidslys":
-        alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
-        alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
-        timetotarget = scenes["current"]["timetotarget"]
-        if timetotarget < 0:
-            timetotarget = 0
-        wait_time = timetotarget + 5*60
-        if not alarmActive or not alarmLightActive:
-            if not alarmActive:
-                _LOGGER.info("Alarm is not active, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
-            elif not alarmLightActive:
-                _LOGGER.info("Alarm is active, but without lights, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
-            timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=wait_time)
-            return
+    alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
+    alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
+    wakeup_trans_name = "Fadeoppsett: Vekking"
+    # wakeup_trans_name = "Fadeoppsett: Arbeidslys"
+    skip_inactive_wakeup_trans = current_trans["friendly_name"] == wakeup_trans_name and scenes["current"] != None and (not alarmActive or not alarmLightActive)
 
     force_run = False
     if "force_run" in current_trans:
@@ -349,7 +339,7 @@ fields:
     delay_between_triggers = 2
     delay = 0
     anything_activated = False
-    if needs_prefade or has_finished:
+    if (needs_prefade or has_finished) and not skip_inactive_wakeup_trans:
         for room in current_trans["Rooms"]:
             if only_for_room != None:
                 ignore_currentscene = True
@@ -366,9 +356,21 @@ fields:
         set_trans_start_time(transition_group)
         return
 
+    if skip_inactive_wakeup_trans:
+        timetotarget = scenes["current"]["timetotarget"]
+        if timetotarget < 0:
+            timetotarget = 0
+        wait_time = timetotarget + 5*60
+        if not alarmActive:
+            _LOGGER.info("Alarm is not active, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
+        elif not alarmLightActive:
+            _LOGGER.info("Alarm is active, but without lights, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
+        timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=wait_time)
+        return
+
     if anything_activated:
         # TODO: Consider if we should skip waiting when no scenes are active, or if that is not needed? Note: if this happens, nothing will happen later on as well, so it is really not so important (except if some rooms are correct and some not?)
-        _LOGGER.info("Waiting " + prefade_duration + " seconds for the previous scene to load")
+        _LOGGER.info("Waiting " + str(prefade_duration) + " seconds for the previous scene to load")
         await asyncio.sleep(prefade_duration)
         _LOGGER.info("Now loading the actual scene")
     lysfade_settings = state.getattr("pyscript.transtools_settings")

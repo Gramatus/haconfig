@@ -1,3 +1,7 @@
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
 entity_prefix = "huetrans"
 state_prefix = "pyscript." + entity_prefix
 room_prefix = "pyscript.transrooms_"
@@ -226,6 +230,7 @@ for val in state.names(domain="pyscript"):
             for room in data["Rooms"]:
                 if room not in all_rooms:
                     all_rooms.append(room)
+_LOGGER.info(all_rooms)
 for room in all_rooms:
     state.persist(room_prefix + room.replace(".","_") + "_fadeend","idle",{
         "icon": "mdi:lighthouse",
