@@ -529,6 +529,9 @@
     - condition: state
       entity_id: input_boolean.alarm_med_lys
       state: 'on'
+    - condition: state
+      entity_id: input_boolean.alarm_aktiv
+      state: 'on'
     - condition: or
       conditions:
       - condition: not
