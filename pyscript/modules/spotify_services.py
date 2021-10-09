@@ -86,10 +86,6 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                     # Probably a paged list of items
                     new_items = resp_json["items"]
                     items = items + new_items
-                elif "tracks" in resp_json:
-                    # Probably a paged list of items
-                    new_items = resp_json["tracks"]
-                    items = items + new_items
                 elif "playlists" in resp_json and "items" in resp_json["playlists"]:
                     # Probably a paged list of items
                     new_items = resp_json["playlists"]["items"]
@@ -100,6 +96,11 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                     if dump_to_log:
                         _LOGGER.info("JSON from Spotify:\n" + response.text())
                     return resp_json
+                elif "tracks" in resp_json:
+                    # Probably a paged list of items
+                    new_items = resp_json["tracks"]
+                    # _LOGGER.info(new_items)
+                    items = items + new_items
                 else:
                     _LOGGER.warning("No items key or uri key found, not sure what to do next")
                     _LOGGER.info("JSON from Spotify:\n" + response.text())
@@ -410,18 +411,17 @@ def ensure_shuffle_playlist_exists(playlistid):
     if playlisturi in known_playlists:
         _LOGGER.info(" > Shuffle playlist is known with ID: \"" + known_playlists[playlisturi]["shuffle_playlist_id"] + "\"")
         return known_playlists[playlisturi]["shuffle_playlist_id"], True
+    _LOGGER.info(" > Shuffle playlist id is not saved, trying to find it by searching Spotify")
     playlist = spotify_get("/playlists/" + playlistid, False)
     playlistname = playlist["name"]
     playlisturi = playlist["uri"]
     shuffle_playlist_name = "Shuffled: " + playlistname
-    # shuffle_playlist_name = "Shuffled: Alle gromlåter"
     shuffle_playlist_matches = spotify_get("/search?q=" + urllib.parse.quote_plus(shuffle_playlist_name) + "&type=playlist", False)
     shuffle_playlist = None
     if len(shuffle_playlist_matches) > 0:
         for playlist in shuffle_playlist_matches:
             if playlist["owner"]["id"] == spotify_username:
                 shuffle_playlist = playlist
-    _LOGGER.info(shuffle_playlist)
     if shuffle_playlist != None:
         _LOGGER.info(" > Shuffle playlist already exists with ID: \"" + shuffle_playlist["id"] + "\"")
         state.setattr("pyscript.spotify_shuffle_playlists." + playlisturi, {
@@ -434,9 +434,7 @@ def ensure_shuffle_playlist_exists(playlistid):
          "description": "Skyggespilleliste for shuffling med min manuelle algoritme",
          "public": False
     }
-    _LOGGER.info(playlist_data)
     shuffle_playlist = spotify_post("/users/" + spotify_username + "/playlists", playlist_data, True)
-    # shuffle_playlist = spotify_post("/users/" + spotify_username + "/playlists", None, True)
     _LOGGER.info(" > Created shuffle playlist with ID: \"" + shuffle_playlist["id"] + "\"")
     state.setattr("pyscript.spotify_shuffle_playlists." + playlisturi, {
         "name": playlistname,
