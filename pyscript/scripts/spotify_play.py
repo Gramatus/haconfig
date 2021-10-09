@@ -247,13 +247,23 @@ fields:
 
 @service
 def update_played_tracks_list():
-    track_list = database_services.run_select_query("DISTINCT [Uri]","[played_tracks_list]")
-    track_ids = ""
-    track_list = track_list[1:5]
-    for track in track_list:
-        track_ids += track["uri"].split(":")[2] + ","
-    track_ids = track_ids[:-1]
-    _LOGGER.info(track_ids)
-    # max 50 ids
-    items = spotify_services.spotify_get("/tracks?ids=" + track_ids)
-    _LOGGER.info(items)
+    track_list = database_services.run_select_query("DISTINCT [Uri]","[played_tracks_list]", "WHERE [album] IS NULL OR [artist] IS NULL OR [play_lenght_ms] IS NULL OR [duration_ms] IS NULL")
+    group_size = 50
+    group_count = int(len(track_list)/group_size) + 1
+    if len(track_list) == 0:
+        group_count = 0
+    _LOGGER.info(group_count)
+    for i in range(group_count):
+        track_ids = ""
+        group = None
+        if i == group_count - 1:
+            group = track_list[group_size*i:]
+        else:
+            group = track_list[group_size*i:group_size*(i+1)]
+        for track in group:
+            track_ids += track["uri"].split(":")[2] + ","
+        track_ids = track_ids[:-1]
+        _LOGGER.info(track_ids)
+        items = spotify_services.spotify_get("/tracks?ids=" + track_ids)
+        for item in items:
+            database_services.update_played_tracks_data(item)

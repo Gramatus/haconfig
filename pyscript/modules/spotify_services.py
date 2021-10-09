@@ -86,6 +86,10 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                     # Probably a paged list of items
                     new_items = resp_json["items"]
                     items = items + new_items
+                elif "tracks" in resp_json:
+                    # Probably a paged list of items
+                    new_items = resp_json["tracks"]
+                    items = items + new_items
                 elif "playlists" in resp_json and "items" in resp_json["playlists"]:
                     # Probably a paged list of items
                     new_items = resp_json["playlists"]["items"]

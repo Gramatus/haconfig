@@ -154,6 +154,18 @@ def add_skipped_track(item):
     finally:
         conn.close()
 
+def update_played_tracks_data(item):
+    conn = sqlite3.connect('home-assistant_v2.db')
+    c = conn.cursor()
+    try:
+        c.execute('UPDATE [played_tracks_list] SET [play_lenght_ms] = ? WHERE [uri] = ? AND [play_lenght_ms] IS NULL', (item["duration_ms"], item["uri"], ))
+        c.execute('UPDATE [played_tracks_list] SET [duration_ms] = ? WHERE [uri] = ? AND [duration_ms] IS NULL', (item["duration_ms"], item["uri"], ))
+        c.execute('UPDATE [played_tracks_list] SET [album] = ?, [artist] = ? WHERE [uri] = ?', (item["album"]["name"], item["artists"][0]["name"], item["uri"]))
+        conn.commit()
+        _LOGGER.info("Updated [play_lenght_ms], [duration_ms], [album] and [artist] where missing for track: " + item["name"])
+    finally:
+        conn.close()
+
 def reset_playlist_cached_tracks(tracks, playlistid):
     conn = sqlite3.connect('home-assistant_v2.db')
     c = conn.cursor()
