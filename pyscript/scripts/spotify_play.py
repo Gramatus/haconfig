@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 #data:
 #  playlistid: 2VarjDoOdeWCYjCtLLdkSM
 @service
-async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist"):
+async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist", fadein_seconds=10, final_volume=0.9, delay_seconds_start_spotcast=5):
     """yaml
 name: Play playlist with or without shuffle
 description: Starts playing the playlist in shuffle mode on the "current" playing entity (default is media_player.kjokkenet)
@@ -41,45 +41,60 @@ fields:
                     - "No shuffle"
                     - "Reuse shadow playlist"
                     - "Update shadow playlist"
+    fadein_seconds:
+        description: Number of seconds for the fadein
+        required: true
+        example: 60
+        selector:
+            number:
+                min: 30
+                max: 120
+                mode: box
+    final_volume:
+        description: Volume to end at
+        required: false
+        example: 1.0
+        selector:
+            number:
+                min: 0
+                max: 1
+                step: 0.01
+                mode: box
 """
     shuffle = True
     if shuffle_type == "No shuffle":
         shuffle = False
-    delay_seconds = 2
-    delay_seconds_start_spotcast = 5
-    volume_fade_seconds = 10
+        delay_seconds = 2
     if playlistid == None:
         return
     if device == None:
         device = "media_player.godehol"
     player_attr = state.getattr(device)
-    _LOGGER.info("  - Setting volume to 0 for " + player_attr["friendly_name"])
-    media_player.volume_set(entity_id=device,volume_level=0)
-    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast")
-    spotcast.start(entity_id=device)
+    # _LOGGER.info("  - Setting volume to 0 for " + player_attr["friendly_name"])
+    # media_player.volume_set(entity_id=device,volume_level=0)
+    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
+    spotcast.start(entity_id=device, force_playback=True, start_volume=0)
+    source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
         _LOGGER.info("  - Getting ID for the related shuffled shadow playlist")
-        playlistid, playlist_exists = spotify_services.ensure_shuffle_playlist_exists(playlistid)
+        playlistid, playlist_exists = spotify_services.ensure_shuffle_playlist_exists(source_playlistid)
         if not playlist_exists:
+            _LOGGER.info("Shadow playlist not found, will create one")
             shuffle_type = "Update shadow playlist"
     if shuffle and shuffle_type == "Update shadow playlist":
         _LOGGER.info("  - Updating the related shuffled shadow playlist")
-        playlistid = spotify_services.ensure_shuffled_playlist(playlistid)
-    else:
-        # If we update the shadow playlist, that should take the required time - if not, we should wait some seconds
-        _LOGGER.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
-        await asyncio.sleep(delay_seconds_start_spotcast)
+        playlistid = spotify_services.ensure_shuffled_playlist(source_playlistid)
+    # Stuff fails if the connection is not ready (i.e. Spotify is not aware of an active playback device)
+    _LOGGER.info("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
+    await asyncio.sleep(delay_seconds_start_spotcast)
+
     _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
     pyscript.play_playlist_at_position(playlistid=playlistid, position=1)
-    # is_playing = state.get("media_player.spotify_gramatus") == "playing"
-    # if is_playing:
-    #media_player.play_media(entity_id="media_player.spotify_gramatus", media_content_id="spotify:playlist:" + playlistid, media_content_type="playlist")
     _LOGGER.info("  - Waiting " + str(delay_seconds) + " more seconds")
     await asyncio.sleep(delay_seconds)
-    # _LOGGER.info("Shuffling playlist and then starting volumne increase over " + str(volume_fade_seconds) + " seconds")
-    _LOGGER.info(" - Starting volume increase over " + str(volume_fade_seconds) + " seconds")
+    _LOGGER.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
     media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
-    pyscript.volume_increase(fadein_seconds=volume_fade_seconds, device=device, initial_volume = 0.0, final_volume = 0.9)
+    pyscript.volume_increase(fadein_seconds=fadein_seconds, device=device, initial_volume = 0.0, final_volume = final_volume)
 
 @service
 def play_playlist_random_old(playlistid):
