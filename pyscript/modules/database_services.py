@@ -126,9 +126,31 @@ def add_played_tracks_list(items):
     c = conn.cursor()
     try:
         for item in items:
-            c.execute('INSERT INTO played_tracks_list VALUES(?, ?, ?)', (item["track"]["uri"], item["track"]["name"], item["played_at"]))
+            album = ""
+            if "album" in item["track"]:
+                album = item["track"]["album"]["name"]
+            artist = ""
+            if "artists" in item["track"]:
+                artist = item["track"]["artists"][0]["name"]
+            c.execute('INSERT INTO played_tracks_list VALUES(?, ?, ?, ?, ?, ?, ?)', (item["track"]["uri"], item["track"]["name"], item["played_at"], album, artist, item["track"]["duration_ms"], item["track"]["duration_ms"]))
         conn.commit()
-        _LOGGER.info("Inserted new rows into [played_tracks_list]")
+        _LOGGER.info("Inserted " + str(len(items)) + " new rows into [played_tracks_list]")
+    finally:
+        conn.close()
+
+def add_skipped_track(item):
+    conn = sqlite3.connect('home-assistant_v2.db')
+    c = conn.cursor()
+    try:
+        album = ""
+        if "album" in item["track"]:
+            album = item["track"]["album"]["name"]
+        artist = ""
+        if "artists" in item["track"]:
+            artist = item["track"]["artists"][0]["name"]
+        c.execute('INSERT INTO played_tracks_list VALUES(?, ?, ?, ?, ?, ?, ?)', (item["track"]["uri"], item["track"]["name"], item["played_at"], album, artist, item["progress_ms"], item["track"]["duration_ms"]))
+        conn.commit()
+        _LOGGER.info("Inserted info on skipped track into [played_tracks_list]: " + item["track"]["name"])
     finally:
         conn.close()
 

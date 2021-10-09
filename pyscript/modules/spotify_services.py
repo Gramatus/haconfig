@@ -48,7 +48,7 @@ async def ensure_token_valid():
     _LOGGER.debug("Token expired at: " + str(datetime.timedelta(seconds=token_expires - int(time.time()))) + ", will get a new token")
     get_spotify_token()
 
-async def spotify_get(relative_url,dump_to_log=False, GetAll=True, MaxCount=1000):
+async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=1000, ReturnRaw=False):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
 
@@ -80,7 +80,9 @@ async def spotify_get(relative_url,dump_to_log=False, GetAll=True, MaxCount=1000
                     elif "before" in resp_json["cursors"]:
                         cursor_text = ", This page ends at: " + datetime.datetime.utcfromtimestamp(int(resp_json["cursors"]["before"])/1000).strftime("%Y-%m-%d %H:%M:%S")
                 _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + cursor_text)
-                if "items" in resp_json:
+                if ReturnRaw:
+                    return resp_json
+                elif "items" in resp_json:
                     # Probably a paged list of items
                     new_items = resp_json["items"]
                     items = items + new_items
@@ -179,18 +181,36 @@ async def spotify_delete(relative_url, json_data):
 
 def update_recently_played():
     # Figure out the most recent info I have
-    last_saved_info = database_services.run_select_query("MAX(played) AS played", "played_tracks_list")[0]["played"]
+    last_saved_info = database_services.run_select_query("MAX(played) AS played", "played_tracks_list", "WHERE [play_lenght_ms] = [duration_ms]")[0]["played"]
     _LOGGER.info("Getting updated data on recently played tracks. Last data saved on recently played is from: " + str(last_saved_info))
-    unix_timestamp = int(last_saved_info.timestamp()*1000)
+    unix_timestamp = int(last_saved_info.replace(tzinfo=datetime.timezone.utc).timestamp()*1000)
     # Get all data on "recently played" after this point in time
     items = spotify_get("/me/player/recently-played?limit=50&after="+str(unix_timestamp), False)
     # items = spotify_get("/me/player/recently-played?limit=50", False, MaxCount=1000)
     filtered_items = []
+    # _LOGGER.info(json.dumps(items[1], indent=2))
     for item in items:
         item["played_at"] = datetime.datetime.strptime(item["played_at"].split(".")[0].replace("Z",""), '%Y-%m-%dT%H:%M:%S')
         if item["played_at"] > last_saved_info:
             filtered_items.append(item)
-    database_services.add_played_tracks_list(filtered_items)
+        else:
+            _LOGGER.info(item["track"]["name"] + " was played before " + str(last_saved_info) + ", at " + str(item["played_at"]))
+    if len(filtered_items) > 0:
+        database_services.add_played_tracks_list(filtered_items)
+    _LOGGER.info("Finished updating recently played tracks")
+
+def skip_track():
+    spotify_playing = state.get("media_player.spotify_gramatus") == "playing"
+    if not spotify_playing:
+        return False
+    data = spotify_get("/me/player/currently-playing", ReturnRaw=True)
+    progress_ms = data["progress_ms"]
+    data["track"] = data["item"]
+    data["played_at"] = datetime.datetime.utcnow();
+    database_services.add_skipped_track(data)
+    _LOGGER.info("Skipping to next track on media_player.spotify_gramatus")
+    media_player.media_next_track(entity_id="media_player.spotify_gramatus")
+    return True
 
 def update_shuffle_playlist(playlistid, shuffleplaylistid):
     # Get stored data on last played time for tracks
@@ -220,7 +240,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
         else:
             # Get all tracks in playlist
             _LOGGER.info("Reading tracks from source playlist")
-            items = spotify_get("/playlists/" + playlistid + "/tracks?limit=100", False)
+            # Note: we are using market here as the data in recently_played is using the uri based on market
+            items = spotify_get("/playlists/" + playlistid + "/tracks?market=NO&limit=100", False)
             _LOGGER.info("Writing updated data on playlist to DB table [playlist_state]")
             database_services.reset_playlist_state(items, playlistid)
 
@@ -231,15 +252,14 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             trackdata = {
                 "name": track["name"],
                 "uri":  track["uri"],
+                "market_uri":  track["uri"],
                 "artist": track["artists"][0]["name"],
                 "album": track["album"]["name"]
             }
-            if track["uri"] == 'spotify:track:69BHRTRrByPFwk2GAAmuMK':
-                if track["uri"] in data:
-                    _LOGGER.info("Last played: " + data[track["uri"]]["last_played"])
-
-            if track["uri"] in data:
-                trackdata["last_played"] = data[track["uri"]]["last_played"]
+            if "linked_from" in track:
+                trackdata["uri"] = track["linked_from"]["uri"]
+            if trackdata["market_uri"] in data:
+                trackdata["last_played"] = data[trackdata["market_uri"]]["last_played"]
             else:
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
             if trackdata["last_played"].timestamp() < 25*365*24*60*60:
@@ -365,6 +385,7 @@ def truncate_playlist(playlistid):
     _LOGGER.info(" > All safeguards reports ok, will proceed to empty the playlist.")
     # Get all tracks in playlist
     _LOGGER.info(" > Getting all tracks (so we can tell Spotify to delete them)")
+    # Note: we are NOT using market here as we want the actual URI stored in the playlist
     items = spotify_get("/playlists/" + playlistid + "/tracks?limit=100", False)
     uris = []
     batch_size = 50

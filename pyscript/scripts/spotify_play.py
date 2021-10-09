@@ -3,6 +3,7 @@ import logging
 from homeassistant.helpers import entity_platform
 import asyncio
 import spotify_services
+import database_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -206,7 +207,7 @@ def spotify_test():
 name: Spotify test code
 """
     # truncate_playlist("6bA10TtiyuqQP0yEYnrd3X")
-    spotify_services.update_shuffle_playlist("2pjB7wGkkoG9VYY8enMR5b","6bA10TtiyuqQP0yEYnrd3X")
+    #spotify_services.update_shuffle_playlist("2pjB7wGkkoG9VYY8enMR5b","6bA10TtiyuqQP0yEYnrd3X")
     # update_shuffle_playlist("3FVKcokzHla6424Cj74LzL","52w4nPUOmgaal2IMdL6Cqk")
     # playlistid = "78RaOXPHXD4zJWFRwzbuEI" # TP 23.5.19
     # playlistid = "2pjB7wGkkoG9VYY8enMR5b" # Alle gromlåter
@@ -214,7 +215,8 @@ name: Spotify test code
     # playlist = spotify_get("/playlists/" + playlistid, False)
     # ensure_shuffle_playlist_exists(playlistid)
     # update_shuffle_playlist("78RaOXPHXD4zJWFRwzbuEI")
-    # update_recently_played()
+    spotify_services.update_recently_played()
+    # spotify_services.skip_track()
 
 @service
 def play_playlist_at_position(playlistid,position):
@@ -242,3 +244,16 @@ fields:
             "position": position-1
         }
     })
+
+@service
+def update_played_tracks_list():
+    track_list = database_services.run_select_query("DISTINCT [Uri]","[played_tracks_list]")
+    track_ids = ""
+    track_list = track_list[1:5]
+    for track in track_list:
+        track_ids += track["uri"].split(":")[2] + ","
+    track_ids = track_ids[:-1]
+    _LOGGER.info(track_ids)
+    # max 50 ids
+    items = spotify_services.spotify_get("/tracks?ids=" + track_ids)
+    _LOGGER.info(items)
