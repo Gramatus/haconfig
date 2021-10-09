@@ -357,12 +357,12 @@
   - platform: numeric_state
     entity_id: sensor.kontoret_temperature
     above: 0.05
-    value_template: '{{ (states("sensor.kontoret_temperature")|float) - (states("input_number.termostat_kontoret")|float)
+    value_template: '{{ (states("sensor.kontoret_temperature")|float(default=20)) - (states("input_number.termostat_kontoret")|float(default=20))
       }}'
   - platform: numeric_state
     entity_id: sensor.kontoret_temperature
     below: '-0.05'
-    value_template: '{{ (states("sensor.kontoret_temperature")|float) - (states("input_number.termostat_kontoret")|float)
+    value_template: '{{ (states("sensor.kontoret_temperature")|float(default=20)) - (states("input_number.termostat_kontoret")|float(default=20))
       }}'
   - platform: time_pattern
     hours: '*'

@@ -157,6 +157,6 @@
       icon: 'mdi:car-parking-lights'
       friendly_name: 'Data entity for next transition group with "Faste lys"'
   - unique_id: test_temp_diff
-    state: '{{ (states("sensor.kontoret_temperature")|float) - (states("input_number.termostat_kontoret")|float) }}'
+    state: '{{ (states("sensor.kontoret_temperature")|float(default=20)) - (states("input_number.termostat_kontoret")|float(default=20)) }}'
     attributes:
       friendly_name: 'Test diff temperatur vs termostat'
