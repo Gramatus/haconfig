@@ -506,3 +506,44 @@ fields:
     trigger_data = json.loads(trigger)
     _LOGGER.info("Entity that triggered the automation: " + trigger_data["entity_id"])
     trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])
+
+@service
+def run_night_light(duration_mins):
+    """yaml
+name: Run night light
+description: Start night light and let it run for the specified duration
+fields:
+    duration_mins:
+        description: Number of minutes for the light to stay on
+        required: true
+        example: 15
+        selector:
+            number:
+                min: 5
+                max: 60
+                step: 5
+                mode: box
+"""
+    timer.start(entity_id="timer.natt_nedtelling", duration=duration_mins*60)
+    # TODO: Consider if I will be saving this anywhere?
+    # input_select.select_option(entity_id="input_select.nattlys_varighet", option="15 min")
+    pyscript.turn_on_scene_by_id(scene_id="Y2qG5PtH6AC7b1j")
+    await asyncio.sleep(10)
+    pyscript.turn_on_scene_by_id(scene_id="xyJCA3wUDhukb-w")
+    await asyncio.sleep(9*60 + 50)
+    next_delay = 5*60
+    light.turn_on(entity_id="light.c_hue_go_soverom_1", transition=next_delay, brightness=1)
+    light.turn_on(entity_id="light.c_hue_go_soverom_2", transition=next_delay, brightness=1)
+    await asyncio.sleep(next_delay)
+    light.turn_off(entity_id="light.c_hue_go_soverom_1")
+    light.turn_off(entity_id="light.c_hue_go_soverom_2")
+
+@service
+def stop_night_light():
+    """yaml
+name: Stop night light
+description: Finish night light run
+"""
+    timer.finish(entity_id="timer.natt_nedtelling")
+    light.turn_off(entity_id="light.c_hue_go_soverom_1")
+    light.turn_off(entity_id="light.c_hue_go_soverom_2")
