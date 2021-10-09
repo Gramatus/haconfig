@@ -3,6 +3,7 @@ import json
 import re
 import media_services
 import spotify_services
+import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,11 +54,24 @@ fields:
     elif action == "Spill Visefavoritter":
         pyscript.play_playlist_random(playlistid="58TtpzdDAFoFkdTHXbx2ak", shuffle_type=shuffle_type)
     elif action == "NRK P1":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        _LOGGER.info("Starting NRK P1")
+        extradata = {
+            "metadata": {
+                "metadataType": 0,
+                "title": "NRK P1",
+                "images": [{ "url": "https://play-lh.googleusercontent.com/U5LxZ1tqqcOoQk6igbKN6Xu6iFxP7jbsUq5pryhxqfeMNs1NIkF6UsFJS-FbdPOlEg=s180-rw" }]
+            }
+        }
+        media_player.play_media(entity_id="media_player.godehol", media_content_id="https://lyd.nrk.no/nrk_radio_p1_sorlandet_mp3_h", media_content_type="audio/mp3", extra=extradata)
     elif action == "Tving HA med bryter":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        _LOGGER.info("Turning off KjøkkenNest, then waiting 5 seconds")
+        media_player.turn_off(entity_id="media_player.kjokkennest")
+        await asyncio.sleep(5)
+        _LOGGER.info("Casting Home Assistant to KjøkkenNest")
+        cast.show_lovelace_view(entity_id="media_player.kjokkennest", dashboard_path="kjokken-ga", view_path="default_view")
     elif action == "Start HA med bryter":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        _LOGGER.info("Casting Home Assistant to KjøkkenNest")
+        cast.show_lovelace_view(entity_id="media_player.kjokkennest", dashboard_path="kjokken-ga", view_path="default_view")
     elif action == "Play media":
         playingEntity, playState = media_services.getPlayingEntity()
         if playingEntity is not None:
@@ -91,11 +105,30 @@ fields:
                 _LOGGER.info("Skipping to next track on " + playingEntity)
                 media_player.media_next_track(entity_id=playingEntity)
     elif action == "Anlegg kjøkken av/på":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        _LOGGER.info("Turning on/off Anlegg kjøkken")
+        remote.send_command(entity_id="remote.harmony_hub_gangen", device="JVC Mini System", command="PowerToggle")
     elif action == "Anlegg bad av/på":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        device_on = state.get("input_boolean.status_anlegg_bad") == "on"
+        if device_on:
+            _LOGGER.info("Turning off Anlegg bad")
+            remote.send_command(entity_id="remote.harmony_hub_gangen", device="Yamaha AV Receiver", command="PowerOff")
+            input_boolean.turn_off(entity_id="input_boolean.status_anlegg_bad")
+        else:
+            _LOGGER.info("Turning on Anlegg bad")
+            remote.send_command(entity_id="remote.harmony_hub_gangen", device="Yamaha AV Receiver", command="PowerOn")
+            input_boolean.turn_on(entity_id="input_boolean.status_anlegg_bad")
     elif action == "Anlegg stue av/på":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        device_on = state.get("light.hue_smart_plug_1") == "on"
+        if device_on:
+            _LOGGER.info("Turning off Anlegg stue")
+            remote.send_command(entity_id="remote.harmony_hub_stua", device="Yamaha AV Receiver", command="PowerOff")
+            light.turn_off(entity_id="light.hue_smart_plug_1")
+            pyscript.turn_off_hdmi_switch()
+        else:
+            _LOGGER.info("Turning on Anlegg stue")
+            remote.send_command(entity_id="remote.harmony_hub_stua", device="Yamaha AV Receiver", command="PowerON")
+            light.turn_on(entity_id="light.hue_smart_plug_1")
+            pyscript.set_hdmi_output(output="Dantax TV")
     elif action == "Anlegg soverom av/på":
         _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
     else:
@@ -105,3 +138,43 @@ fields:
 def getPlayingEntity():
     playingEntity, playState = media_services.getPlayingEntity()
     _LOGGER.info(playingEntity)
+
+@service
+def set_hdmi_output(output):
+    """yaml
+name: Set HDMI Output
+description: Set correct output on the HDMI box
+fields:
+    output:
+        description: Output to activate
+        required: true
+        example: Projector
+        selector:
+            select:
+                options:
+                    - "Projector"
+                    - "Dantax TV"
+"""
+    turn_off_hdmi_switch()
+    wait_time = 0.2
+    await asyncio.sleep(wait_time)
+    # Turn on correct device
+    cmd = "InputOut1=In2"
+    if output == "Projector":
+        cmd = "InputOut1=In2"
+    if output == "Dantax TV":
+        cmd = "InputOut2=In2"
+    remote.send_command(entity_id="remote.harmony_hub_stua", device="HDMI Switch", command=cmd)
+
+@service
+def turn_off_hdmi_switch():
+    """yaml
+name: Turn off HDMI Switch
+"""
+    wait_time = 0.2
+    # Power Toggle always turns ON if Out1 is off, but turns *everything* OFF is Out1 is on...
+    # This command is only used to force power ON for out 1
+    remote.send_command(entity_id="remote.harmony_hub_stua", device="HDMI Switch", command="InputOut1=In1")
+    await asyncio.sleep(wait_time)
+    # Make sure everything is off
+    remote.send_command(entity_id="remote.harmony_hub_stua", device="HDMI Switch", command="Power Toggle")
