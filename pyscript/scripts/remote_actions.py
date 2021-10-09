@@ -2,6 +2,7 @@ import logging
 import json
 import re
 import media_services
+import spotify_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,8 +58,6 @@ fields:
         _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
     elif action == "Start HA med bryter":
         _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
-    elif action == "Forrige på Spotify":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
     elif action == "Play media":
         playingEntity, playState = media_services.getPlayingEntity()
         if playingEntity is not None:
@@ -79,8 +78,18 @@ fields:
         if playingEntity is not None:
             _LOGGER.info("Stopping " + playingEntity)
             media_player.media_stop(entity_id=playingEntity)
+    elif action == "Forrige på Spotify":
+        playingEntity, playState = media_services.getPlayingEntity()
+        if playingEntity is not None:
+            _LOGGER.info("Going back to previus track on " + playingEntity)
+            media_player.media_previous_track(entity_id=playingEntity)
     elif action == "Neste på Spotify":
-        _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
+        spotify_playing = spotify_services.skip_track()
+        if not spotify_playing:
+            playingEntity, playState = media_services.getPlayingEntity()
+            if playingEntity is not None:
+                _LOGGER.info("Skipping to next track on " + playingEntity)
+                media_player.media_next_track(entity_id=playingEntity)
     elif action == "Anlegg kjøkken av/på":
         _LOGGER.info("TODO: Trigger action \"" + action + "\"...")
     elif action == "Anlegg bad av/på":

@@ -12,6 +12,7 @@ www/
 harmony*.conf
 *.log
 *.log.1
+*.log.fault
 custom_components/hacs
 custom_components/pyscript/*
 #custom_components/pyscript/*
