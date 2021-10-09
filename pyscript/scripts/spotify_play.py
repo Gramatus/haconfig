@@ -64,14 +64,12 @@ fields:
     shuffle = True
     if shuffle_type == "No shuffle":
         shuffle = False
-        delay_seconds = 2
+    delay_seconds = 2
     if playlistid == None:
         return
     if device == None:
         device = "media_player.godehol"
     player_attr = state.getattr(device)
-    # _LOGGER.info("  - Setting volume to 0 for " + player_attr["friendly_name"])
-    # media_player.volume_set(entity_id=device,volume_level=0)
     _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
     spotcast.start(entity_id=device, force_playback=True, start_volume=0)
     source_playlistid = playlistid
