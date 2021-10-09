@@ -309,7 +309,7 @@ fields:
     alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
     wakeup_trans_name = "Fadeoppsett: Vekking"
     # wakeup_trans_name = "Fadeoppsett: Arbeidslys"
-    skip_inactive_wakeup_trans = current_trans["friendly_name"] == wakeup_trans_name and scenes["current"] != None and (not alarmActive or not alarmLightActive)
+    skip_inactive_wakeup_trans = current_trans["friendly_name"] == wakeup_trans_name and scenes["current"] != None and (not alarmActive or not alarmLightActive) and only_for_room == None
 
     force_run = False
     if "force_run" in current_trans:
