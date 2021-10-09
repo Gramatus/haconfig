@@ -192,13 +192,10 @@ def update_recently_played():
     items = spotify_get("/me/player/recently-played?limit=50&after="+str(unix_timestamp), False)
     # items = spotify_get("/me/player/recently-played?limit=50", False, MaxCount=1000)
     filtered_items = []
-    # _LOGGER.info(json.dumps(items[1], indent=2))
     for item in items:
         item["played_at"] = datetime.datetime.strptime(item["played_at"].split(".")[0].replace("Z",""), '%Y-%m-%dT%H:%M:%S')
         if item["played_at"] > last_saved_info:
             filtered_items.append(item)
-        else:
-            _LOGGER.info(item["track"]["name"] + " was played before " + str(last_saved_info) + ", at " + str(item["played_at"]))
     if len(filtered_items) > 0:
         database_services.add_played_tracks_list(filtered_items)
     _LOGGER.info("Finished updating recently played tracks")
