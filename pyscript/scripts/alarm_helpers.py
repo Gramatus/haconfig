@@ -67,10 +67,16 @@ fields:
     volume_level = initial_volume
     volume_increase = final_volume - initial_volume
     fadein_steps = abs(int(100 * volume_increase))
-    wait_seconds = fadein_seconds / fadein_steps
-    _LOGGER.info("Will change volume from " + str(initial_volume) + " to " + str(final_volume) + " in "+str(fadein_seconds)+" seconds. Time for each step: " + str(round(wait_seconds, 2)))
+    wait_seconds = 0
+    if fadein_steps == 0:
+        _LOGGER.info("Volume change from " + str(initial_volume) + " to " + str(final_volume) + " will happen in 0 steps, i.e. no change will occur")
+    else:
+        wait_seconds = fadein_seconds / fadein_steps
     increase = final_volume > initial_volume
-    increase_step = volume_increase / fadein_steps
+    increase_step = 0
+    if not fadein_steps == 0:
+        _LOGGER.info("Will change volume from " + str(initial_volume) + " to " + str(final_volume) + " in "+str(fadein_seconds)+" seconds. Time for each step: " + str(round(wait_seconds, 2)))
+        increase_step = volume_increase / fadein_steps
     media_player.volume_set(entity_id=device, volume_level=volume_level)
     for x in range(fadein_steps):
         volume_level=round(volume_level+increase_step, 2)
@@ -144,7 +150,7 @@ description: Finish things in bedroom and prepare downstairs
     melcloud.set_vane_vertical(entity_id="climate.soverom",position="swing")
     climate.set_temperature(entity_id="climate.soverom",temperature=16)
     _LOGGER.info("Turning off lights with a 120 second transition")
-    light.turn_off(entity_id="light.soverom",transition=120)
+    light.turn_off(entity_id="light.soverom", transition=120)
     _LOGGER.info("Changing wakeup active to off")
     input_boolean.turn_off(entity_id="input_boolean.vekking_pagar")
     _LOGGER.info("Wait 30 seconds before turning off the sound")
@@ -169,19 +175,73 @@ description: Sounding the alarm
     pyscript.fully_to_foreground(device="fully.nettbrett1")
 
 @service
-async def wakeup_alarm():
+async def wakeup_alarm(device="media_player.godehol"):
     """yaml
 name: Run wakeup alarm routine
 description: Sounding the alarm
 """
     _LOGGER.info("Start: Wakeup routine")
     playlistID = state.get("input_text.vekking_spilleliste_id")
-    pyscript.play_playlist_random(playlistid=playlistID, device="media_player.godehol", shuffle_type="No shuffle", fadein_seconds=60, final_volume=0.9, delay_seconds_start_spotcast=10)
+    pyscript.play_playlist_random(playlistid=playlistID, device=device, shuffle_type="No shuffle", fadein_seconds=60, final_volume=0.9, delay_seconds_start_spotcast=10)
     _LOGGER.info("  > Waiting 5 seconds before turning on sound system")
     await asyncio.sleep(10)
     _LOGGER.info("Turning on sound system")
     remote.turn_on(entity_id="remote.harmony_hub_soverom",activity="Listen to Music")
     _LOGGER.info("Done: Wakeup routine")
+
+@service
+def ensure_alarm_active():
+    """yaml
+name: Ensure that the alarm actually started as expected
+"""
+    check_interval = 30
+    need_to_check_alarm = True
+    _LOGGER.info("Started script to ensure that wakeup plays music as expected")
+    while need_to_check_alarm:
+        wakeup_active = state.get("input_boolean.vekking_pagar") == "on"
+        if not wakeup_active:
+            _LOGGER.info("Wakeup is not active, will not do anything")
+            need_to_check_alarm = False
+            break
+        asyncio.sleep(check_interval)
+        target_device = "media_player.godehol"
+        alarm_start = state.getattr("input_datetime.vekking")["timestamp"]
+        midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone()
+        time_since_wakeup = datetime.datetime.now().timestamp() - (alarm_start + midnight.timestamp())
+        if time_since_wakeup > 5*60:
+            target_device = "media_player.soverom"
+        cast_playback_active = state.get(target_device) == "playing"
+        spotify_playback_active = state.get("media_player.spotify_gramatus") == "playing"
+        if cast_playback_active and spotify_playback_active:
+            _LOGGER.info("Confirmed alarm is at expected state")
+            need_to_check_alarm = False
+            break
+        # _LOGGER.info("Alarm is not running as expected, trying to fix that")
+        minutes_since_wakeup = round(time_since_wakeup/60, 1)
+        ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+        chromecast_power_plug = "device_not_yet_configured"
+        # cc_time_since_turnon = (state.get(chromecast_power_plug + ".last_changed") - midnight).total_seconds()
+        cc_time_since_turnon = 5*60 # Until I actually have a plug to use...
+        # If not ok after 15 minutes, and HA has been up for more than 60 minutes, try restaring HA
+        if time_since_wakeup > 15*60 and ha_uptime_seconds > 60*60:
+            _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, restarting home assistant to see if that helps (HA uptime: " + str(datetime.timedelta(seconds=ha_uptime_seconds)) + ")")
+            homeassistant.restart()
+        # If not ok after 10 minutes, and the smart plug powering the chromecastdevice has been on for more than 60 minutes, try turning that off and then on again
+        elif time_since_wakeup > 10*60 and cc_time_since_turnon > 60*60:
+            _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to restart chromecast device (by turning power off/on)")
+            #light.turn_off(chromecast_power_plug)
+            # await asyncio.sleep(15)
+            #light.turn_on(chromecast_power_plug)
+            _LOGGER.info("Turning CC off/on not yet implemented - smart plug currently not acquired")
+        else:
+            # Change target media player to bedroom if Godehol does not work after 5 minutes
+            if time_since_wakeup > 5*60:
+                _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to connect to " + target_device + ", in case the trouble is in the cast group and the rerunning wakeup routine")
+            else:
+                _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to rerun wakeup routine")
+            pyscript.wakeup_alarm(device=target_device)
+        # break # For testing purposes
+    _LOGGER.info("Finished ensure alarm script")
 
 @service
 async def set_wakeup_playlist(playlist):
