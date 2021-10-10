@@ -398,7 +398,7 @@ def truncate_playlist(playlistid):
         spotify_delete("/playlists/" + playlistid + "/tracks", {"tracks": uris})
 
 def ensure_shuffle_playlist_exists(playlistid):
-    _LOGGER.info("Making sure we have a shadow playlist")
+    # _LOGGER.info("Making sure we have a shadow playlist")
     known_playlists = state.getattr("pyscript.spotify_shuffle_playlists")
     playlisturi = "spotify:playlist:" + playlistid
     if playlisturi in known_playlists:

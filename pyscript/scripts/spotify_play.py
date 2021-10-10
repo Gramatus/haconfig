@@ -71,7 +71,7 @@ fields:
     spotcast.start(entity_id=device, force_playback=True, start_volume=0)
     source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
-        _LOGGER.info("  - Getting ID for the related shuffled shadow playlist")
+        # _LOGGER.debug("  - Getting ID for the related shuffled shadow playlist")
         playlistid, playlist_exists = spotify_services.ensure_shuffle_playlist_exists(source_playlistid)
         if not playlist_exists:
             _LOGGER.info("Shadow playlist not found, will create one")

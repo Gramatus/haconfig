@@ -85,7 +85,7 @@ logger:
     # My pyscripts
     hue_tools: debug
     fully_actions: debug
-    spotify_play: debug
+    spotify_play: info
     # Disable info logging from automations running all the time (that usually also has custom logging from my scripts if needed)
     homeassistant.components.automation.termostat_kontoret: warning
     homeassistant.components.automation.vekking_sikre_lysfade_pa_riktig_tidspunkt: warning
