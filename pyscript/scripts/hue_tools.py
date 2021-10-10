@@ -41,9 +41,9 @@ fields:
     current_temp = state.get(data["sensor_entity"])
     target_temp = state.get(data["target_entity"])
     target_state = "off" if current_temp > target_temp else "on"
-    _LOGGER.info("Current temperature is now " + str(current_temp) + ". With a target of " + str(target_temp) + " we are now turning " + target_state + " this thermostat:")
+    _LOGGER.info("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
     for switch in data["switches"]:
-        _LOGGER.info("  > turning " + target_state + " " + switch)
+        # _LOGGER.info("  > turning " + target_state + " " + switch)
         if target_state == "off":
             light.turn_off(entity_id=switch)
         else:
@@ -66,7 +66,7 @@ description: Start the wakeup light routine
 
 # bzJVKN6HRpYcaaw
 @service
-def turn_on_scene_by_id(scene_id,group_id=None,transitionhours=0,transitionmins=0,transitionsecs=0,transitionms=400):
+def turn_on_scene_by_id(scene_id, group_id=None, transitionhours=0, transitionmins=0, transitionsecs=0, transitionms=400, no_logging=False):
     """yaml
 name: Turn on scene by ID
 description: Turn on a Hue scene based on the scene ID (will use group 0 if no group is specified)
@@ -152,7 +152,8 @@ fields:
         _LOGGER.warning("No scene found with ID: %s",scene_id);
         return;
     transition = int(round(((transitionhours*60*60)+(transitionmins*60)+(transitionsecs)+(transitionms/1000))*10,0))
-    _LOGGER.debug("Triggering scene. Group: " + group.name + ", Scene: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=round(transition/10,1))) + " (submitted as: " + str(transition) + ")")
+    if not no_logging:
+        _LOGGER.debug("Triggering scene. Group: " + group.name + ", Scene: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=round(transition/10,1))) + " (submitted as: " + str(transition) + ")")
     group.set_action(scene=scene.id,transitiontime=transition)
 
 @service

@@ -424,7 +424,7 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
     elif lights_on and trans_active:
         debug_info = ""
         if state.get("pyscript.transtools_debugmode") != "on":
-            pyscript.turn_on_scene_by_id(scene_id=scn["id"], group_id=room_entity, transitionsecs=transition_time, transitionms=0)
+            pyscript.turn_on_scene_by_id(scene_id=scn["id"], group_id=room_entity, transitionsecs=transition_time, transitionms=0, no_logging=True)
         else:
             debug_info = "DEBUG MODE, skipping: "
         if "loginfo" in scn:
@@ -504,7 +504,7 @@ fields:
     trigger = trigger.replace(" None"," null")
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
-    _LOGGER.info("Entity that triggered the automation: " + trigger_data["entity_id"])
+    _LOGGER.debug("Entity that triggered the automation: " + trigger_data["entity_id"])
     trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])
 
 @service
