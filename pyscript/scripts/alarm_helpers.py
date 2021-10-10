@@ -216,7 +216,6 @@ name: Ensure that the alarm actually started as expected
             _LOGGER.info("Confirmed alarm is at expected state")
             need_to_check_alarm = False
             break
-        # _LOGGER.info("Alarm is not running as expected, trying to fix that")
         minutes_since_wakeup = round(time_since_wakeup/60, 1)
         ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
         chromecast_power_plug = "device_not_yet_configured"
