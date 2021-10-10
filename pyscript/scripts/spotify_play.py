@@ -87,11 +87,11 @@ fields:
     await asyncio.sleep(delay_seconds_start_spotcast)
 
     _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
-    pyscript.play_playlist_at_position(playlistid=playlistid, position=1)
+    pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
+    # media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
     _LOGGER.info("  - Waiting " + str(delay_seconds) + " more seconds")
     await asyncio.sleep(delay_seconds)
     _LOGGER.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
-    media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
     pyscript.volume_increase(fadein_seconds=fadein_seconds, device=device, initial_volume = 0.0, final_volume = final_volume)
 
 @service
@@ -232,7 +232,7 @@ name: Spotify test code
     # spotify_services.skip_track()
 
 @service
-def play_playlist_at_position(playlistid,position):
+def play_playlist_at_position(playlistid, position, shuffle=False):
     """yaml
 name: Play playlist and start at the given position
 fields:
@@ -250,6 +250,12 @@ fields:
             number:
                 min: 1
                 mode: box
+    shuffle:
+        description: Should shuffle be active?
+        required: false
+        example: false
+        selector:
+            boolean:
 """
     spotify_services.spotify_put("/me/player/play", {
         "context_uri": "spotify:playlist:"+playlistid,
@@ -257,6 +263,7 @@ fields:
             "position": position-1
         }
     })
+    spotify_services.spotify_put("/me/player/shuffle?state=" + str(shuffle))
 
 @service
 def update_played_tracks_list():

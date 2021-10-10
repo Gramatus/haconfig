@@ -146,7 +146,7 @@ async def spotify_post(relative_url, json_data, return_response=False):
             if return_response:
                 return response.json()
 
-async def spotify_put(relative_url, json_data, return_response=False):
+async def spotify_put(relative_url, json_data=None, return_response=False):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
     headers = {
