@@ -173,7 +173,7 @@ name: Turn off HDMI Switch
 """
     wait_time = 0.2
     # Power Toggle always turns ON if Out1 is off, but turns *everything* OFF is Out1 is on...
-    # This command is only used to force power ON for out 1
+    # This command is only used to force power ON for out1
     remote.send_command(entity_id="remote.harmony_hub_stua", device="HDMI Switch", command="InputOut1=In1")
     await asyncio.sleep(wait_time)
     # Make sure everything is off

@@ -162,9 +162,7 @@ fields:
                 domain: fully
 """
     ip = state.getattr(device)["ip"]
-    # _LOGGER.debug(ip)
     queryParams = urllib.parse.quote_plus("intent:dismiss:true#Intent;launchFlags=0x10000000;component=com.gramatus.setalarm/.MainActivity;end")
-    # _LOGGER.debug(queryParams)
     fully_action(ip,"loadUrl","&url="+queryParams)
 
 @service
@@ -190,7 +188,6 @@ fields:
             entity:
                 domain: fully
 """
-    #ip = device.split(" ")[1].strip("())")
     ip = state.getattr(device)["ip"]
     pkg_split = pkg.split(": ")
     _LOGGER.debug(pkg_split)
@@ -289,7 +286,6 @@ fields:
 """
     fully_action(ip,"startScreensaver")
 
-# Level is 0 to 255 (?)
 @service
 def fully_set_brightness(device,level):
     """yaml
@@ -318,7 +314,6 @@ fields:
 
 async def fully_action(ip,action,params=""):
     pwd = pyscript.config["fully_pwd"]
-    # _LOGGER.debug("Triggering action: %s",action)
     full_url = 'http://'+ip+':2323/?password='+pwd+'&type=json&cmd='+action+params
     encoded_url = URL(full_url,encoded=True)
     
@@ -326,7 +321,6 @@ async def fully_action(ip,action,params=""):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(encoded_url, allow_redirects=False) as response:
-                # _LOGGER.debug(response.url)
                 _LOGGER.debug("Response from fully: Status " + str(response.status) + ", reply: " + response.text())
     except Exception as e:
         _LOGGER.error("Failed to connect to Fully, error: " + str(e))

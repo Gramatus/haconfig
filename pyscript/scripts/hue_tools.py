@@ -1,4 +1,3 @@
-# Testing my own hue api component
 import aiohue
 import logging
 import async_timeout
@@ -43,7 +42,6 @@ fields:
     target_state = "off" if current_temp > target_temp else "on"
     _LOGGER.info("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
     for switch in data["switches"]:
-        # _LOGGER.info("  > turning " + target_state + " " + switch)
         if target_state == "off":
             light.turn_off(entity_id=switch)
         else:
@@ -64,7 +62,6 @@ description: Start the wakeup light routine
         async with session.put(url,data=body) as response:
             _LOGGER.debug("Response from Hue: Status "+str(response.status)+", reply: "+response.text())
 
-# bzJVKN6HRpYcaaw
 @service
 def turn_on_scene_by_id(scene_id, group_id=None, transitionhours=0, transitionmins=0, transitionsecs=0, transitionms=400, no_logging=False):
     """yaml
@@ -137,15 +134,12 @@ fields:
             if grp.name == friendly_name:
                 match_count = match_count + 1
                 group = grp
-                # _LOGGER.info("Found match: " + grp.name + ", details:")
-                # _LOGGER.info(grp)
     if group is None:
         group = bridge.groups.get_all_lights_group()
     if match_count > 1:
         _LOGGER.warning("Found multiple matches with name: " + friendly_name + ", check bridge for e.g. zones with duplicate names")
     scene = None
     for scn in bridge.scenes.values():
-        # _LOGGER.info(scn)
         if scn.id == scene_id:
             scene = scn
     if(scene == None):
@@ -192,25 +186,16 @@ fields:
             entity:
                 domain: huescenes
 """
-    # _LOGGER.debug("Running script")
     for entity_id in state.names(domain="roomtoggles"):
         room_state = state.get(entity_id)
-        # _LOGGER.debug(entity_id + " state: " + room_state)
         if(room_state == "on"):
-            # _LOGGER.debug(entity_id + " is selected")
             for group in state.getattr(entity_id)["rooms"]:
                 group_name = state.getattr(group)["friendly_name"]
-                # _LOGGER.debug("Related group: " + str(group_name))
                 scene_name = state.getattr(scene_entity)["scene_name"]
-                # _LOGGER.debug("Scene name: " + str(scene_name))
                 hue.hue_activate_scene(group_name=group_name,scene_name=scene_name)
-                #_LOGGER.debug("Toggles: " + str(scene_toggles))
-                #_LOGGER.debug("Selected toggle: " + str(scene_toggles[scene_name]))
                 for entity in state.names(domain="huescenes"):
-                    #input_boolean.turn_off(entity_id="input_boolean."+scene_toggles[name])
-                    state.set(entity,value = "off")
+                    state.set(entity, value = "off")
                 state.set(scene_entity,value = "on")
-                #input_boolean.turn_on(entity_id="input_boolean."+scene_entity.friendly_name)
 
 def get_bridge():
     bridge = aiohue.Bridge(

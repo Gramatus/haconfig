@@ -40,7 +40,6 @@ def getPlayingEntity_old():
     defaultEntity = "media_player.godehol"
     inGroup = ['media_player.badet' , 'media_player.fm', 'media_player.kjokkenet', 'media_player.kontoret']
     playState = "playing"
-    # group_state = media_player.Godehol
     playingEntity = None
     spotifyDetails = state.getattr(media_player.spotify_gramatus)
     _LOGGER.debug("Spotify status details: %s",spotifyDetails)

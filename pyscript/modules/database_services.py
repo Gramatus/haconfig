@@ -59,7 +59,6 @@ def populate_played_tracks_list():
             uri = key
             name = data[key]["name"]
             last_played = datetime.datetime.strptime(data[key]["last_played"].split(".")[0].replace("Z",""), '%Y-%m-%dT%H:%M:%S')
-            # _LOGGER.info("INSERT INTO played_tracks_list VALUES('{uri}', '{name}', {last_played})".format(uri=uri,name=name,last_played=last_played))
             c.execute('''
                 INSERT INTO played_tracks_list VALUES(?, ?, ?)
             ''',(uri, name, last_played))
@@ -70,19 +69,15 @@ def populate_played_tracks_list():
 
 def populate_playlist_cached_tracks():
     conn = sqlite3.connect('home-assistant_v2.db')
-    # 'ALTER TABLE table_name ADD COLUMN column_definition'
     c = conn.cursor()
     try:
         cached_tracks = state.getattr("pyscript.playlist_cached_tracks")
         for playlistid in cached_tracks:
-            # data = cached_tracks[playlistid]
             for item in cached_tracks[playlistid]:
-                # _LOGGER.info(key)
                 uri = item["uri"]
                 name = item["name"]
                 artist = item["artist"]
                 album = item["album"]
-                # last_played = datetime.datetime.strptime(item["last_played"].split(".")[0].replace("Z",""), '%Y-%m-%dT%H:%M:%S')
                 last_played = item["last_played"]
                 c.execute('INSERT INTO playlist_cached_tracks VALUES(?, ?, ?, ?, ?, ?)',(uri, playlistid, name, artist, album, last_played))
         conn.commit()
@@ -92,7 +87,6 @@ def populate_playlist_cached_tracks():
 
 def populate_playlist_cached_tracks2():
     conn = sqlite3.connect('home-assistant_v2.db')
-    # 'ALTER TABLE table_name ADD COLUMN column_definition'
     c = conn.cursor()
     try:
         cached_tracks = run_select_query("*","playlist_cached_tracks")
@@ -106,13 +100,11 @@ def populate_playlist_cached_tracks2():
 
 def populate_playlist_state():
     conn = sqlite3.connect('home-assistant_v2.db')
-    # 'ALTER TABLE table_name ADD COLUMN column_definition'
     c = conn.cursor()
     try:
         playlist_states = state.getattr("pyscript.playliststate")
         for playlistid in playlist_states:
             for item in playlist_states[playlistid]:
-                # _LOGGER.info(key)
                 uri = item["track"]["uri"]
                 json_data = json.dumps(item)
                 c.execute('INSERT INTO playlist_state VALUES(?, ?, ?)',(uri, playlistid, json_data))

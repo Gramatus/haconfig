@@ -20,7 +20,6 @@ state.persist("pyscript.temp_token","volatile", {
     "token": "none",
     "expires": None
 })
-# state.persist("pyscript.spotify_last_played","n/a", {})
 state.persist("pyscript.spotify_shuffle_playlists","n/a", {})
 
 spotify_username = "gramatus"
@@ -39,7 +38,7 @@ async def get_spotify_token():
         _LOGGER.info("Got an updated token, it will expire in: " + str(datetime.timedelta(seconds=expires)))
         state.setattr("pyscript.temp_token.token", token)
         state.setattr("pyscript.temp_token.expires", token_expires)
-    except:  # noqa: E722
+    except:
         raise HomeAssistantError("Could not get spotify token")
 
 async def ensure_token_valid():
@@ -99,7 +98,6 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                 elif "tracks" in resp_json:
                     # Probably a paged list of items
                     new_items = resp_json["tracks"]
-                    # _LOGGER.info(new_items)
                     items = items + new_items
                 else:
                     _LOGGER.warning("No items key or uri key found, not sure what to do next")
@@ -191,7 +189,6 @@ def update_recently_played():
     unix_timestamp = int(last_saved_info.replace(tzinfo=datetime.timezone.utc).timestamp()*1000)
     # Get all data on "recently played" after this point in time
     items = spotify_get("/me/player/recently-played?limit=50&after="+str(unix_timestamp), False)
-    # items = spotify_get("/me/player/recently-played?limit=50", False, MaxCount=1000)
     filtered_items = []
     for item in items:
         item["played_at"] = datetime.datetime.strptime(item["played_at"].split(".")[0].replace("Z",""), '%Y-%m-%dT%H:%M:%S')
@@ -216,7 +213,6 @@ def skip_track():
 
 def update_shuffle_playlist(playlistid, shuffleplaylistid):
     # Get stored data on last played time for tracks
-    # TODO: Look into if Spotify is actually reporting the wrong uri's for me, thus giving me the wrong keys
     base_data = database_services.run_select_query("[uri], [name], MAX([played]) as [played]", "played_tracks_list", "GROUP BY [uri], [name]")
     data = {}
     for track in base_data:
@@ -278,7 +274,6 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             track["last_played"] = track["last_played"] + datetime.timedelta(days=day_offset)
             day_offset = day_offset + 1
 
-    # TODO: Look for unwanted groupings in the sorted data
     max_passes = 100
     previous_track = None
     lowest_last_played_date = min(sorted_tracks, key=lambda x: x["last_played"])["last_played"]
@@ -307,24 +302,24 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
 
     sorted_tracks = sorted(sorted_tracks, key=lambda i:i["last_played"], reverse=False)
     report_sort_data = False
-    if report_sort_data:
-        result_list = []
-        order = 1
-        for track in sorted_tracks:
-            result = ""
-            if order < 10: result = "00"
-            elif order < 100: result = "0"
-            result = result + str(order) + " " + track["artist"] + " " + track["name"] # + " (last played: " + str(track["last_played"]) + ")"
-            result = result[:45]
-            result = result + " (" + str(track["last_played"]) + ")"
-            result_list.append(result)
-            order = order + 1
-        result_list = result_list[:75]
-        _LOGGER.info(result_list)
-        state.persist("pyscript.playlist_sort_test","n/a",{
-            playlistid: result_list
-        })
-        state.setattr("pyscript.playlist_sort_test." + playlistid, result_list)
+    # if report_sort_data:
+    #     result_list = []
+    #     order = 1
+    #     for track in sorted_tracks:
+    #         result = ""
+    #         if order < 10: result = "00"
+    #         elif order < 100: result = "0"
+    #         result = result + str(order) + " " + track["artist"] + " " + track["name"] # + " (last played: " + str(track["last_played"]) + ")"
+    #         result = result[:45]
+    #         result = result + " (" + str(track["last_played"]) + ")"
+    #         result_list.append(result)
+    #         order = order + 1
+    #     result_list = result_list[:75]
+    #     _LOGGER.info(result_list)
+    #     state.persist("pyscript.playlist_sort_test","n/a",{
+    #         playlistid: result_list
+    #     })
+    #     state.setattr("pyscript.playlist_sort_test." + playlistid, result_list)
     # Split into lists, based on the most recently played and the least recently played
     group_size = 25
     min_group_count = 10
@@ -362,7 +357,6 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     for group in groups:
         for track in group:
             count = count + 1
-            # _LOGGER.info(str(count) + " " + track["name"] + ": " + str(track["last_played"]))
             uris.append(track["uri"])
             if len(uris) >= batch_size:
                 _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
@@ -375,7 +369,6 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     _LOGGER.info("DONE! Shadow playlist has been updated")
 
 def truncate_playlist(playlistid):
-    # { "tracks": [{ "uri": "spotify:track:4iV5W9uYEdYUVa79Axb7Rh" },{ "uri": "spotify:track:1301WleyT98MSxVHPZCA6M" }] }
     playlist = spotify_get("/playlists/" + playlistid, False)
     if "name" not in playlist:
         _LOGGER.info("Could not find a name for the playlist we are about to everything stuff from, will not do anything")

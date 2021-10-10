@@ -1,4 +1,3 @@
-# Testing my own hue api component
 import aiohue
 import logging
 import async_timeout
@@ -29,7 +28,6 @@ def get_current_trans(transition_group):
     return current_trans
 
 def get_scene_to_activate_with_time_and_previous(transition_group):
-    # current_trans = state.get("input_select.lysfade_aktiv_gruppe")
     current_trans = get_current_trans(transition_group)
     if current_trans == None:
         _LOGGER.info("No transition currently active")
@@ -81,10 +79,6 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
             # There is still delay time "available", and thus the transition time should be the complete time expected for the scene
             scene_that_should_be_active["timeinseconds"] = scene_time
         scene_that_should_be_active["delay"] = corrected_delay
-        # _LOGGER.info("scene_time: " + str(scene_time))
-        # _LOGGER.info("elapsed_time_for_current_scene: " + str(elapsed_time_for_current_scene))
-        _LOGGER.info("corrected_delay: " + str(scene_that_should_be_active["delay"]) + ", timeinseconds: " + str(scene_that_should_be_active["timeinseconds"]))
-        # _LOGGER.info("timeinseconds: " + str(scene_that_should_be_active["timeinseconds"]))
         if(seconds_for_remaining_scenes > seconds_to_target):
             target_found = True
     if seconds_to_target < 0:
@@ -250,12 +244,6 @@ fields:
     state.set(trans,"on")
     _LOGGER.info("Set state to on for: " + trans)
 
-# Suggested use case:
-# 1. Run an automation every x minutes before a given time
-# 2. This automation triggers this, which runs the next light
-# Alternative:
-# - Set time to next light as a value somewhere
-# - Trigger this based on a timer that this thing starts
 @service
 def trigger_transition_scene(transition_group, only_for_room=None):
     """yaml
@@ -308,7 +296,6 @@ fields:
     alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
     alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
     wakeup_trans_name = "Fadeoppsett: Vekking"
-    # wakeup_trans_name = "Fadeoppsett: Arbeidslys"
     skip_inactive_wakeup_trans = current_trans["friendly_name"] == wakeup_trans_name and scenes["current"] != None and (not alarmActive or not alarmLightActive) and only_for_room == None
 
     force_run = False
@@ -331,7 +318,6 @@ fields:
     elif scenes["current"]["index"] != scenes["previous"]["index"] and (scenes["current"]["normaltimetotarget"]-scenes["current"]["timetotarget"]) > 300:
         # We are currently not at the first scene in the transition. If any room is not currently already on it's way to the correct scene, switch to that one first. However, only do this if we are more than five minutes after the original start time.
         needs_prefade = True
-        #_LOGGER.info("Quickly starting previous scene: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"])))
         scenes["previous"]["loginfo"] = "Quickly starting previous scene: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"]))
         scenes["previous"]["timeinseconds"] = prefade_duration
 
@@ -369,7 +355,6 @@ fields:
         return
 
     if anything_activated:
-        # TODO: Consider if we should skip waiting when no scenes are active, or if that is not needed? Note: if this happens, nothing will happen later on as well, so it is really not so important (except if some rooms are correct and some not?)
         _LOGGER.info("Waiting " + str(prefade_duration) + " seconds for the previous scene to load")
         await asyncio.sleep(prefade_duration)
         _LOGGER.info("Now loading the actual scene")
@@ -394,7 +379,6 @@ fields:
     timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=duration-delay)
 
 def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=False, ignore_currentscene=False):
-    # _LOGGER.info("Next room: " + room_entity)
     room_key = room_entity.replace(".","_")
     lysfade_settings = state.getattr("pyscript.transtools_settings")
     if room_key in lysfade_settings:
@@ -408,7 +392,6 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
         roomsettings["trans_active"] = True
     if "currentScene" not in roomsettings:
         roomsettings["currentScene"] = ""
-    # _LOGGER.info("Checking if scene with id: " + scn["id"] + " should be triggered for group: " + room_entity)
 
     lights_on = state.get(room_entity) == "on"
     trans_active = roomsettings["trans_active"]

@@ -90,14 +90,6 @@ fields:
         await asyncio.sleep(wait_seconds)
     _LOGGER.info("Done, final volume is: " + str(volume_level))
 
-# Alternate script:
-# service: remote.send_command
-# target:
-#   entity_id: remote.harmony_hub_soverom
-# data:
-#   command: PowerToggle
-#   device: 75674802
-
 @service
 async def good_night():
     """yaml
@@ -129,8 +121,6 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
 
 @service
 def test_wifi_off():
-    #now = datetime.datetime.now()
-    #midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     turnoff_time = str(datetime.timedelta(seconds=int((datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())+5*60))
     turnon_time = str(datetime.timedelta(seconds=state.getattr("input_datetime.vekking")["timestamp"]-5*60))
     pyscript.fully_set_wifi_off_between(timeoff=turnoff_time, timeon=turnon_time, device="fully.nettbrett1")
@@ -239,7 +229,6 @@ name: Ensure that the alarm actually started as expected
             else:
                 _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to rerun wakeup routine")
             pyscript.wakeup_alarm(device=target_device)
-        # break # For testing purposes
     _LOGGER.info("Finished ensure alarm script")
 
 @service

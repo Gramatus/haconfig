@@ -1,4 +1,3 @@
-# https://hacs-pyscript.readthedocs.io/en/latest/
 import logging
 from homeassistant.helpers import entity_platform
 import asyncio
@@ -10,8 +9,6 @@ _LOGGER = logging.getLogger(__name__)
 # Purpose of this script: playing podcast episodes from HA.
 # This cannot be done with the normal spotify integration (I think), so I need to use spotcast - but I need to play it on whatever is already the active entity...
 
-#data:
-#  playlistid: 2VarjDoOdeWCYjCtLLdkSM
 @service
 async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist", fadein_seconds=10, final_volume=0.9, delay_seconds_start_spotcast=5):
     """yaml
@@ -88,7 +85,6 @@ fields:
 
     _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
     pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
-    # media_player.shuffle_set(entity_id="media_player.spotify_gramatus", shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
     _LOGGER.info("  - Waiting " + str(delay_seconds) + " more seconds")
     await asyncio.sleep(delay_seconds)
     _LOGGER.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
@@ -130,8 +126,6 @@ fields:
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id="media_player.godehol",uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
-#data:
-#  showid: 2VarjDoOdeWCYjCtLLdkSM
 @service
 def play_next_podcast_episode(showid):
     """yaml
@@ -151,10 +145,19 @@ fields:
         _LOGGER.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:show:"+showid)
 
-#data:
-#  episodeid: 5Oma1LSh6prFDhbVmYXrXy
 @service
 def play_podcast_episode(episodeid):
+    """yaml
+name: Play next episode
+description: Plays the given podcast episode
+fields:
+    episodeid:
+        description: ID of the episode to play
+        required: true
+        example: 5Oma1LSh6prFDhbVmYXrXy
+        selector:
+            text:
+"""
     if episodeid is not None:
         playingEntity, playState = getPlayingEntity()
         _LOGGER.debug("Calling spotcast.start")
@@ -209,9 +212,6 @@ fields:
             text:
 """
     shuffle_playlist_id = spotify_services.ensure_shuffled_playlist(playlistid)
-    # update_recently_played()
-    # shuffle_playlist_id = ensure_shuffle_playlist_exists(playlistid)
-    # update_shuffle_playlist(playlistid, shuffle_playlist_id)
     return shuffle_playlist_id
 
 @service
@@ -219,15 +219,6 @@ def spotify_test():
     """yaml
 name: Spotify test code
 """
-    # truncate_playlist("6bA10TtiyuqQP0yEYnrd3X")
-    #spotify_services.update_shuffle_playlist("2pjB7wGkkoG9VYY8enMR5b","6bA10TtiyuqQP0yEYnrd3X")
-    # update_shuffle_playlist("3FVKcokzHla6424Cj74LzL","52w4nPUOmgaal2IMdL6Cqk")
-    # playlistid = "78RaOXPHXD4zJWFRwzbuEI" # TP 23.5.19
-    # playlistid = "2pjB7wGkkoG9VYY8enMR5b" # Alle gromlåter
-    # playlistid = "3FVKcokzHla6424Cj74LzL" # Min våkneliste
-    # playlist = spotify_get("/playlists/" + playlistid, False)
-    # ensure_shuffle_playlist_exists(playlistid)
-    # update_shuffle_playlist("78RaOXPHXD4zJWFRwzbuEI")
     spotify_services.update_recently_played()
     # spotify_services.skip_track()
 
