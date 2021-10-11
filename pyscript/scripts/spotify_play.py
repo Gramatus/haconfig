@@ -68,7 +68,7 @@ fields:
         device = "media_player.godehol"
     player_attr = state.getattr(device)
     _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
-    spotcast.start(entity_id=device, force_playback=True, start_volume=0)
+    spotcast.start(entity_id=device, uri="spotify:playlist:" + playlistid, force_playback=True, start_volume=0)
     source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
         # _LOGGER.debug("  - Getting ID for the related shuffled shadow playlist")

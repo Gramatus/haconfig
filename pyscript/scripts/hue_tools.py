@@ -24,7 +24,7 @@ state.persist("pyscript." + entity_prefix_thermo + "kontor", "off", {
 @service
 def toggle_thermostat(thermostat):
     """yaml
-name: Toggle 
+name: Toggle
 description: Turn on a Hue scene based on the scene ID (will use group 0 if no group is specified)
 fields:
     thermostat:
