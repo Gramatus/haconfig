@@ -755,3 +755,27 @@
   action:
   - service: shell_command.backup_ha_log
   mode: single
+- id: '1633968086119'
+  alias: 'Home/Away: Come home'
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.torgeir
+    zone: zone.home
+    event: enter
+  condition: []
+  action:
+  - service: pyscript.come_home
+  mode: single
+- id: '1633969695251'
+  alias: 'Home/Away: Leave home'
+  description: ''
+  trigger:
+  - platform: zone
+    entity_id: person.torgeir
+    zone: zone.home
+    event: enter
+  condition: []
+  action:
+  - service: pyscript.leave_home
+  mode: single
