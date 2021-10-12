@@ -336,7 +336,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
         min_group_count = 2
     group_count = int(len(sorted_tracks)/group_size)
     if group_count < min_group_count:
-        _LOGGER.info("To few groups, increasing group count to: " + str(min_group_count))
+        _LOGGER.info("Too few groups, increasing group count to: " + str(min_group_count))
         group_count = min_group_count
     if len(sorted_tracks)/group_count < min_group_size:
         group_count = int(len(sorted_tracks)/min_group_size)
