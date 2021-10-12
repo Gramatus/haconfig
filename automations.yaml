@@ -763,9 +763,22 @@
     entity_id: person.torgeir
     zone: zone.home
     event: enter
-  condition: []
+  condition:
+  - condition: or
+    conditions:
+    - condition: sun
+      after: sunset
+      after_offset: 00:30:00
+    - condition: sun
+      before: sunrise
+      before_offset: -00:30:00
   action:
   - service: pyscript.come_home
+  - service: light.turn_on
+    target:
+      entity_id:
+      - light.ute
+      - light.garasjen
   mode: single
 - id: '1633969695251'
   alias: 'Home/Away: Leave home'
@@ -774,8 +787,15 @@
   - platform: zone
     entity_id: person.torgeir
     zone: zone.home
-    event: enter
+    event: leave
+  - platform: sun
+    event: sunrise
   condition: []
   action:
   - service: pyscript.leave_home
+  - service: light.turn_off
+    target:
+      entity_id:
+      - light.ute
+      - light.garasjen
   mode: single
