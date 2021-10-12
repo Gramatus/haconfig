@@ -184,7 +184,7 @@ def ensure_alarm_active():
     """yaml
 name: Ensure that the alarm actually started as expected
 """
-    check_interval = 30
+    check_interval = 120
     need_to_check_alarm = True
     _LOGGER.info("Started script to ensure that wakeup plays music as expected")
     while need_to_check_alarm:
