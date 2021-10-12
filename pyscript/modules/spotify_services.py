@@ -278,7 +278,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     previous_track = None
     lowest_last_played_date = min(sorted_tracks, key=lambda x: x["last_played"])["last_played"]
     for i in range(max_passes):
-        _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
+        # _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
         updated_list = []
         order_updated = False
         for track in sorted_tracks:
@@ -298,6 +298,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             previous_track = track
             updated_list.append(track)
         sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
+        if i == max_passes - 1:
+            _LOGGER.info("Final number of passes to avoid groupings: " + str(i + 1))
         if order_updated == False:
             _LOGGER.info("Final number of passes to avoid groupings: " + str(i + 1))
             break
