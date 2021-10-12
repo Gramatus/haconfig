@@ -1,1 +1,2 @@
 backup_ha_log: cp home-assistant.log backup_logs/{{ as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d_%H-%M-%S', true) }}_home-assistant-backup.log
+empty_ha_log: echo "Log was reset {{ as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d_%H-%M-%S', true) }}" > home-assistant.log
