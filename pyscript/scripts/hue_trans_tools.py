@@ -299,7 +299,8 @@ fields:
     skip_inactive_wakeup_trans = current_trans["friendly_name"] == wakeup_trans_name and scenes["current"] != None and (not alarmActive or not alarmLightActive) and only_for_room == None
 
     force_run = False
-    if "force_run" in current_trans:
+    alarmRunning = state.get("input_boolean.vekking_pagar") == "on"
+    if "force_run" in current_trans and alarmRunning:
         force_run = current_trans["force_run"]
 
     prefade_duration = int(float(state.get("input_number.lysfade_prefade_varighet")))
@@ -313,12 +314,12 @@ fields:
         # This should only happen when a light is turned on after end time (e.g. when coming home after the normal end of transition)
         has_finished = True
         # Do a quick transition to the right state. At this point, previous and current are the same. We update data for "previous" because that is what is used in the next bit and that saves us some logic later.
-        scenes["previous"]["loginfo"]  = "Past target time, quickly restoring correct light: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"]))
+        scenes["previous"]["loginfo"]  = "Past target time, quickly restoring correct light, scene no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"])) + ","
         scenes["previous"]["timeinseconds"] = prefade_duration
     elif scenes["current"]["index"] != scenes["previous"]["index"] and (scenes["current"]["normaltimetotarget"]-scenes["current"]["timetotarget"]) > 300:
         # We are currently not at the first scene in the transition. If any room is not currently already on it's way to the correct scene, switch to that one first. However, only do this if we are more than five minutes after the original start time.
         needs_prefade = True
-        scenes["previous"]["loginfo"] = "Quickly starting previous scene: " + scenes["previous"]["name"] + ", no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"]))
+        scenes["previous"]["loginfo"] = "Quickly starting previous scene, no. " + str(scenes["previous"]["index"]) + " of " + str(len(current_trans["Scenes"])) + ","
         scenes["previous"]["timeinseconds"] = prefade_duration
 
     # Let there be a 2 second wait between each call, to avoid the bridge being overloaded
@@ -410,10 +411,9 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
             pyscript.turn_on_scene_by_id(scene_id=scn["id"], group_id=room_entity, transitionsecs=transition_time, transitionms=0, no_logging=True)
         else:
             debug_info = "DEBUG MODE, skipping: "
-        if "loginfo" in scn:
-            _LOGGER.info(debug_info + scn["loginfo"])
-        else:
-            _LOGGER.info("  > " + room_entity + ":" + debug_info + " Triggering scene \"" + scn["name"] + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
+        if "loginfo" not in scn:
+            scn["loginfo"] = "Triggering scene"
+        _LOGGER.info("  > " + room_entity + ":" + debug_info + " " +scn["loginfo"] + " \"" + scn["name"] + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
         roomsettings["currentScene"] = scn["id"]
         roomsettings["currentSceneName"] = scn["name"]
         scene_activated = True
