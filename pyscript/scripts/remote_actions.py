@@ -4,6 +4,7 @@ import re
 import media_services
 import spotify_services
 import asyncio
+import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -119,6 +120,9 @@ fields:
             remote.send_command(entity_id="remote.harmony_hub_gangen", device="Yamaha AV Receiver", command="PowerOn")
             input_boolean.turn_on(entity_id="input_boolean.status_anlegg_bad")
     elif action == "Anlegg stue av/på":
+        if (datetime.datetime.now().astimezone() - state.get("light.hue_smart_plug_1.last_changed")).total_seconds() < 5:
+            _LOGGER.info("Anlegg stue changed state in the last 5 seconds, will not do anything")
+            return
         device_on = state.get("light.hue_smart_plug_1") == "on"
         if device_on:
             _LOGGER.info("Turning off Anlegg stue")
