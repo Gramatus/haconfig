@@ -274,10 +274,11 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             track["last_played"] = track["last_played"] + datetime.timedelta(days=day_offset)
             day_offset = day_offset + 1
 
-    max_passes = 100
+    max_passes = 10
     previous_track = None
     lowest_last_played_date = min(sorted_tracks, key=lambda x: x["last_played"])["last_played"]
     for i in range(max_passes):
+        _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
         updated_list = []
         order_updated = False
         for track in sorted_tracks:
@@ -287,10 +288,10 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
                     #     _LOGGER.info("Found two by each other for: " + track["artist"])
                     # if previous_track["album"] == track["album"]:
                     #     _LOGGER.info("Found two by each other for: " + track["album"])
-                    seconds_from_min_to_this = (track["last_played"] - lowest_last_played_date).total_seconds()
+                    seconds_from_min_to_this = int((track["last_played"] - lowest_last_played_date).total_seconds())
                     move_secs = 0
                     if seconds_from_min_to_this > 0:
-                        move_secs = random.randrange(seconds_from_min_to_this) * -1
+                        move_secs = (random.randrange(seconds_from_min_to_this) * -1) + (seconds_from_min_to_this * 0.2)
                     # _LOGGER.info("Seconds to move " + track["name"] + ": " + str(move_secs))
                     track["last_played"] = track["last_played"] + datetime.timedelta(seconds=move_secs)
                     order_updated = True
@@ -298,6 +299,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             updated_list.append(track)
         sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
         if order_updated == False:
+            _LOGGER.info("Final number of passes to avoid groupings: " + str(i + 1))
             break
 
     sorted_tracks = sorted(sorted_tracks, key=lambda i:i["last_played"], reverse=False)
@@ -321,15 +323,24 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     #     })
     #     state.setattr("pyscript.playlist_sort_test." + playlistid, result_list)
     # Split into lists, based on the most recently played and the least recently played
-    group_size = 25
-    min_group_count = 10
-    if len(sorted_tracks) < 25:
-        min_group_count = 5
-    if len(sorted_tracks) < 10:
+    group_size = 40
+    if len(sorted_tracks) > 300:
+        group_size = 50
+    if len(sorted_tracks) > 500:
+        group_size = 75
+    min_group_count = 6
+    min_group_size = 25
+    if len(sorted_tracks) < 100:
+        min_group_count = 3
+    if len(sorted_tracks) < 50:
         min_group_count = 2
     group_count = int(len(sorted_tracks)/group_size)
     if group_count < min_group_count:
+        _LOGGER.info("To few groups, increasing group count to: " + str(min_group_count))
         group_count = min_group_count
+    if len(sorted_tracks)/group_count < min_group_size:
+        group_count = int(len(sorted_tracks)/min_group_size)
+        _LOGGER.info("Too small groups, reduced group count to: " + str(group_count))
     groups = []
     final_track_list = []
     group_count_total = 0
@@ -341,6 +352,10 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
         else:
             group = sorted_tracks[group_size*i:group_size*(i+1)]
         random.shuffle(group)
+        # track_debug_list = []
+        # for track in group:
+        #     track_debug_list.append(track["name"])
+        # _LOGGER.info(track_debug_list)
         group_count_total = group_count_total + len(group)
         final_track_list = final_track_list + group
         groups.append(group)
@@ -356,6 +371,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     _LOGGER.info(" > Adding shuffled tracks to shadow playlist in batches of " + str(batch_size))
     for group in groups:
         for track in group:
+            # _LOGGER.info(track["name"])
             count = count + 1
             uris.append(track["uri"])
             if len(uris) >= batch_size:
