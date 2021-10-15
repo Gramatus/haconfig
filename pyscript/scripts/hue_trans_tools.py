@@ -428,16 +428,19 @@ def trigger_for_room_if_active(room_entity, scn, targetid, delay, force_run=Fals
     room_name = state.getattr(room_entity)["friendly_name"]
     fadeend_entity = room_prefix + room_key + "_fadeend"
     transactive_entity = room_prefix + room_key + "_trans_active"
-    if scene_activated:
-        state.setattr(fadeend_entity+".duration",str(datetime.timedelta(seconds=transition_time)))
-        state.setattr(fadeend_entity+".start_time",datetime.datetime.now().isoformat())
-        state.setattr(fadeend_entity+".end_time",(datetime.datetime.now() + datetime.timedelta(0,transition_time)).isoformat())
-        state.set(fadeend_entity,"active")
-        state.setattr(fadeend_entity+".friendly_name", room_name + ": til \"" + scn["name"] + "\"")
+    try:
+        if scene_activated:
+            state.setattr(fadeend_entity+".duration",str(datetime.timedelta(seconds=transition_time)))
+            state.setattr(fadeend_entity+".start_time",datetime.datetime.now().isoformat())
+            state.setattr(fadeend_entity+".end_time",(datetime.datetime.now() + datetime.timedelta(0,transition_time)).isoformat())
+            state.set(fadeend_entity,"active")
+            state.setattr(fadeend_entity+".friendly_name", room_name + ": til \"" + scn["name"] + "\"")
 
-    state.setattr("pyscript.transtools_settings." + room_key, roomsettings)
-    state.setattr("pyscript.active_trans_scenes." + room_key, roomsettings["currentSceneName"])
-    state.setattr(transactive_entity+".friendly_name", room_name + ": lys skal fade")
+        state.setattr("pyscript.transtools_settings." + room_key, roomsettings)
+        state.setattr("pyscript.active_trans_scenes." + room_key, roomsettings["currentSceneName"])
+        state.setattr(transactive_entity+".friendly_name", room_name + ": lys skal fade")
+    except Exception as e:
+        log.error("Failed to set some attributes, error:" + str(e))
     return scene_activated
 
 @service

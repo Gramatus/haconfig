@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -221,30 +222,35 @@ state.persist(state_prefix+"_fastelys_kveld","off",{
 })
 
 
+def update_room_entities():
+    _LOGGER.info("Started to update room entities - waiting 60 seconds")
+    asyncio.sleep(60)
+    all_rooms = list()
+    for val in state.names(domain="pyscript"):
+        if entity_prefix+"_" in val:
+            data = state.getattr(val)
+            if "Rooms" in data:
+                for room in data["Rooms"]:
+                    if room not in all_rooms:
+                        all_rooms.append(room)
+    _LOGGER.info(all_rooms)
+    for room in all_rooms:
+        state.persist(room_prefix + room.replace(".","_") + "_fadeend","idle",{
+            "icon": "mdi:lighthouse",
+            "friendly_name": room + ": fader til scene",
+            "duration": "0:00:00",
+            "start_time": "0:00:00",
+            "end_time": "0:00:00"
+        })
+        state.persist(room_prefix + room.replace(".","_") + "_trans_active","true",{
+            "friendly_name": room + ": lys skal fade",
+            "device_class": "trans_active"
+        })
+        state.persist(room_prefix + room.replace(".","_"),"n/a",{
+            "friendly_name": state.getattr(room)["friendly_name"],
+            "device_class": "trans_room",
+            "entity_id": room
+        })
+    _LOGGER.info("Finished updating room entities")
 
-all_rooms = list()
-for val in state.names(domain="pyscript"):
-    if entity_prefix+"_" in val:
-        data = state.getattr(val)
-        if "Rooms" in data:
-            for room in data["Rooms"]:
-                if room not in all_rooms:
-                    all_rooms.append(room)
-_LOGGER.info(all_rooms)
-for room in all_rooms:
-    state.persist(room_prefix + room.replace(".","_") + "_fadeend","idle",{
-        "icon": "mdi:lighthouse",
-        "friendly_name": room + ": fader til scene",
-        "duration": "0:00:00",
-        "start_time": "0:00:00",
-        "end_time": "0:00:00"
-    })
-    state.persist(room_prefix + room.replace(".","_") + "_trans_active","true",{
-        "friendly_name": room + ": lys skal fade",
-        "device_class": "trans_active"
-    })
-    state.persist(room_prefix + room.replace(".","_"),"n/a",{
-        "friendly_name": state.getattr(room)["friendly_name"],
-        "device_class": "trans_room",
-        "entity_id": room
-    })
+update_room_entities()
