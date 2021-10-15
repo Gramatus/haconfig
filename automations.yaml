@@ -532,7 +532,7 @@
       entity_id: input_boolean.alarm_med_lys
       state: 'on'
     - condition: state
-      entity_id: input_boolean.alarm_aktiv
+      entity_id: input_boolean.vekking_pagar
       state: 'on'
     - condition: or
       conditions:
