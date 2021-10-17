@@ -89,6 +89,10 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                     # Probably a paged list of items
                     new_items = resp_json["playlists"]["items"]
                     items = items + new_items
+                elif "episodes" in resp_json and "items" in resp_json["episodes"]:
+                    # Probably a paged list of items
+                    new_items = resp_json["episodes"]["items"]
+                    items = items + new_items
                 elif "uri" in resp_json:
                     # Return data has a single item (most items in Spotify have a uri)
                     has_more_data = False
@@ -107,7 +111,7 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                 if len(items) >= MaxCount:
                     _LOGGER.debug("Reached max number of items")
                     has_more_data = False
-                elif "next" in resp_json and resp_json["next"] != None:
+                elif "next" in resp_json and resp_json["next"] != None and GetAll:
                     full_url = resp_json["next"]
                     _LOGGER.debug(full_url)
                 else:
