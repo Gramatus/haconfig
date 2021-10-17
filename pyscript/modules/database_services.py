@@ -5,6 +5,35 @@ import json
 
 _LOGGER = logging.getLogger(__name__)
 
+def create_mired_lookup():
+    conn = sqlite3.connect('home-assistant_v2.db')
+    c = conn.cursor()
+    # c.execute('DROP TABLE playlist_cached_tracks')
+    c.execute('''
+        CREATE TABLE mired_lookup (
+            color_temp INT,
+            hue REAL,
+            sat REAL,
+            red INT,
+            green INT,
+            blue INT,
+            x REAL,
+            y REAL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def add_mired_lookup(color_temp, hue, sat, red, green, blue, x, y):
+    conn = sqlite3.connect('home-assistant_v2.db')
+    c = conn.cursor()
+    try:
+        c.execute('INSERT INTO mired_lookup VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (color_temp, hue, sat, red, green, blue, x, y))
+        conn.commit()
+        _LOGGER.info("Inserted mired info into [mired_lookup]: " + str(color_temp))
+    finally:
+        conn.close()
+
 def recreate_playlist_cached_tracks():
     conn = sqlite3.connect('home-assistant_v2.db')
     c = conn.cursor()
