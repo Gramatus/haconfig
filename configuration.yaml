@@ -81,7 +81,8 @@ logger:
     custom_components.gramatus: debug
     custom_components.roomtoggles: debug
     #homeassistant.components.zeroconf: debug
-    #pychromecast: debug
+    pytradfri: info
+    pychromecast: info
     # My pyscripts
     hue_tools: debug
     fully_actions: debug
@@ -91,13 +92,17 @@ logger:
     homeassistant.components.automation.vekking_sikre_lysfade_pa_riktig_tidspunkt: warning
     homeassistant.components.automation.lysfade_sikre_tid_fra_vekking_til_arbeidslys: warning
     homeassistant.components.automation.fjernkontroll_reagere_pa_knapp: warning
+    homeassistant.components.automation.hue_reagere_pa_knapp: warning
     homeassistant.components.automation.lysfade_fange_opp_at_lyset_blir_skrudd_pa: warning
+    homeassistant.components.automation.lysfade_fange_opp_at_lyset_blir_skrudd_av: warning
     homeassistant.components.automation.home_away_leave_home: warning
     homeassistant.components.automation.home_away_come_home: warning
   filters:
     pychromecast.controllers:
       - "Receiver:channel_disconnected"
       - "Receiver:setting volume"
+    pychromecast.socket_client:
+      - "Received unknown namespace"
     # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
     # Login from localhost is probably nabu casa
     #homeassistant.components.http.ban:
