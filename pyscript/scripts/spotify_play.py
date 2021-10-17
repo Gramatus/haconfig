@@ -95,15 +95,6 @@ fields:
     _LOGGER.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
     pyscript.volume_increase(fadein_seconds=fadein_seconds, device=device, initial_volume = 0.0, final_volume = final_volume)
 
-def ummm():
-    delay_seconds = 5
-    spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
-    _LOGGER.info("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
-    await asyncio.sleep(delay_seconds)
-    _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
-    pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
-
-
 @service
 def play_playlist_random_old(playlistid):
     """yaml
