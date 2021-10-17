@@ -90,6 +90,45 @@
     attributes:
       icon: 'mdi:alarm'
       friendly_name: 'Alarm nettbrett aktiv'
+  - unique_id: huetrans_vekking_endtime_auto
+    state: "{{ (state_attr('input_datetime.vekking', 'timestamp') + (30*60))|timestamp_custom('%H:%M:%S', false) }}"
+    attributes:
+      friendly_name: 'LysFade: Slutt Vekking (beregnet)'
+      editable: "{{ false }}"
+      has_date: "{{ false }}"
+      has_time: "{{ true }}"
+      hour: "{{ ((state_attr('input_datetime.vekking', 'hour') + (state_attr('input_datetime.vekking', 'minute')/60) + (state_attr('input_datetime.vekking', 'second')/(60*60)) + 0.5) // 1) | int }}"
+      minute: "{{ ((state_attr('input_datetime.vekking', 'minute') + (state_attr('input_datetime.vekking', 'second')/60) + 30) % 60) | int }}"
+      second: "{{ (state_attr('input_datetime.vekking', 'second') + (30*60)) % 60 }}"
+      timestamp: "{{ (state_attr('input_datetime.vekking', 'timestamp') + (30*60)) }}"
+  - unique_id: huetrans_hoved_arbeidslys_timestamp_helper
+    state: >-
+      {% set item_entity_id = 'pyscript.huetrans_hoved_arbeidslys' %}
+      {% set after_entity = state_attr(item_entity_id, 'after_entity') %}
+      {% set min_diff = state_attr(item_entity_id, 'min_diff') %}
+      {% set endtime_entity = state_attr(item_entity_id, 'normal_endtime_entity') %}
+      {% if not '.' in endtime_entity %}
+        {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+      {% endif %}
+      {% set endtime = state_attr(endtime_entity, 'timestamp') %}
+      {% set min_endtime = state_attr(after_entity, 'timestamp') %}
+      {% if endtime - min_endtime < min_diff %}
+        {{ min_endtime + min_diff }}
+      {% else %}
+        {{ endtime }}
+      {% endif %}
+  - unique_id: huetrans_arbeidslys_endtime_auto
+    state: "{{ states('sensor.template_huetrans_hoved_arbeidslys_timestamp_helper')|int|timestamp_custom('%H:%M:%S', false) }}"
+    attributes:
+      friendly_name: 'LysFade: Slutt Arbeidslys (beregnet)'
+      editable: "{{ false }}"
+      has_date: "{{ false }}"
+      has_time: "{{ true }}"
+      hour: "{{ states('sensor.template_huetrans_hoved_arbeidslys_timestamp_helper')|int // (60*60) }}"
+      minute: "{{ (states('sensor.template_huetrans_hoved_arbeidslys_timestamp_helper')|int % (60*60)) // 60 }}"
+      second: "{{ states('sensor.template_huetrans_hoved_arbeidslys_timestamp_helper')|int % 60}}"
+      timestamp: "{{ states('sensor.template_huetrans_hoved_arbeidslys_timestamp_helper')|int }}"
+  # IPORTANT: This needs to be placed AFTER the auto endtime templates, since this relies on data from them to calculate it's value
   - unique_id: next_transition_hoved
     state: >-
       {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
@@ -100,7 +139,9 @@
         {% if 'huetrans_hoved' in item.entity_id %}
           {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
           {% if endtime_entity != None %}
-            {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% if not '.' in endtime_entity %}
+              {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% endif %}
             {% set transTimestamp = state_attr(endtime_entity, 'timestamp') %}
             {% if nowTimestamp < transTimestamp %}
               {% if ns.nextTimestamp > transTimestamp %}
@@ -123,6 +164,100 @@
     attributes:
       icon: 'mdi:car-parking-lights'
       friendly_name: 'Data entity for next transition group with "hoved"'
+  - unique_id: current_transition_hoved
+    state: >-
+      {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+      {% set ns = namespace(currentTimer='',currentTimestamp=0,firstTimer='',firstTimestamp=0,seconds_to_complete_trans=0) %}
+      {% set ns.currentTimestamp = 0 %}
+      {% set ns.firstTimestamp = 60*60*24 %}
+      {% for item in states.pyscript %}
+        {% if 'huetrans_hoved' in item.entity_id %}
+          {% set ns.seconds_to_complete_trans = 0 %}
+          {% for scn in state_attr(item.entity_id, 'Scenes') %}
+            {% set ns.seconds_to_complete_trans = ns.seconds_to_complete_trans + scn.timeinseconds + scn.delay|default(0) %}
+          {% endfor %}
+          {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
+          {% if endtime_entity != None %}
+            {% if not '.' in endtime_entity %}
+              {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% endif %}
+            {% set transTimestamp = state_attr(endtime_entity, 'timestamp') - ns.seconds_to_complete_trans %}
+            {% if nowTimestamp > transTimestamp %}
+              {% if ns.currentTimestamp < transTimestamp %}
+                {% set ns.currentTimer = item.entity_id %}
+                {% set ns.currentTimestamp = transTimestamp %}
+              {% endif %}
+            {% endif %}
+            {% if ns.firstTimestamp > transTimestamp %}
+              {% set ns.firstTimer = item.entity_id %}
+              {% set ns.firstTimestamp = transTimestamp %}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.firstTimestamp > ns.currentTimestamp %}
+        {% set ns.currentTimer = ns.firstTimer %}
+        {% set ns.currentTimestamp = ns.firstTimestamp %}
+      {% endif %}
+      {{ ns.currentTimer }}
+    attributes:
+      icon: 'mdi:car-parking-lights'
+      friendly_name: 'Data entity for current transition group with "hoved"'
+  - unique_id: huetrans_fastelys_morgen_timestamp_helper
+    state: >-
+      {% set item_entity_id = 'pyscript.huetrans_fastelys_morgen' %}
+      {% set after_entity = state_attr(item_entity_id, 'after_entity') %}
+      {% set min_diff = state_attr(item_entity_id, 'min_diff') %}
+      {% set endtime_entity = state_attr(item_entity_id, 'normal_endtime_entity') %}
+      {% if not '.' in endtime_entity %}
+        {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+      {% endif %}
+      {% set endtime = state_attr(endtime_entity, 'timestamp') %}
+      {% set min_endtime = state_attr(after_entity, 'timestamp') %}
+      {% if endtime - min_endtime < min_diff %}
+        {{ min_endtime + min_diff }}
+      {% else %}
+        {{ endtime }}
+      {% endif %}
+  - unique_id: huetrans_fastelys_morgen_endtime_auto
+    state: "{{ states('sensor.template_huetrans_fastelys_morgen_timestamp_helper')|int|timestamp_custom('%H:%M:%S', false) }}"
+    attributes:
+      friendly_name: 'LysFade: Slutt Basislys morgen (beregnet)'
+      editable: "{{ false }}"
+      has_date: "{{ false }}"
+      has_time: "{{ true }}"
+      hour: "{{ states('sensor.template_huetrans_fastelys_morgen_timestamp_helper')|int // (60*60) }}"
+      minute: "{{ (states('sensor.template_huetrans_fastelys_morgen_timestamp_helper')|int % (60*60)) // 60 }}"
+      second: "{{ states('sensor.template_huetrans_fastelys_morgen_timestamp_helper')|int % 60}}"
+      timestamp: "{{ states('sensor.template_huetrans_fastelys_morgen_timestamp_helper')|int }}"
+  - unique_id: huetrans_fastelys_dag_timestamp_helper
+    state: >-
+      {% set item_entity_id = 'pyscript.huetrans_fastelys_dag' %}
+      {% set after_entity = state_attr(item_entity_id, 'after_entity') %}
+      {% set min_diff = state_attr(item_entity_id, 'min_diff') %}
+      {% set endtime_entity = state_attr(item_entity_id, 'normal_endtime_entity') %}
+      {% if not '.' in endtime_entity %}
+        {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+      {% endif %}
+      {% set endtime = state_attr(endtime_entity, 'timestamp') %}
+      {% set min_endtime = state_attr(after_entity, 'timestamp') %}
+      {% if endtime - min_endtime < min_diff %}
+        {{ min_endtime + min_diff }}
+      {% else %}
+        {{ endtime }}
+      {% endif %}
+  - unique_id: huetrans_fastelys_dag_endtime_auto
+    state: "{{ states('sensor.template_huetrans_fastelys_dag_timestamp_helper')|int|timestamp_custom('%H:%M:%S', false) }}"
+    attributes:
+      friendly_name: 'LysFade: Slutt Basislys dag (beregnet)'
+      editable: "{{ false }}"
+      has_date: "{{ false }}"
+      has_time: "{{ true }}"
+      hour: "{{ states('sensor.template_huetrans_fastelys_dag_timestamp_helper')|int // (60*60) }}"
+      minute: "{{ (states('sensor.template_huetrans_fastelys_dag_timestamp_helper')|int % (60*60)) // 60 }}"
+      second: "{{ states('sensor.template_huetrans_fastelys_dag_timestamp_helper')|int % 60}}"
+      timestamp: "{{ states('sensor.template_huetrans_fastelys_dag_timestamp_helper')|int }}"
+  # IPORTANT: This needs to be placed AFTER the auto endtime templates, since this relies on data from them to calculate it's value
   - unique_id: next_transition_fastelys
     state: >-
       {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
@@ -133,7 +268,9 @@
         {% if 'huetrans_fastelys' in item.entity_id %}
           {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
           {% if endtime_entity != None %}
-            {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% if not "." in endtime_entity %}
+              {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% endif %}
             {% set transTimestamp = state_attr(endtime_entity, 'timestamp') %}
             {% if nowTimestamp < transTimestamp %}
               {% if ns.nextTimestamp > transTimestamp %}
@@ -156,6 +293,45 @@
     attributes:
       icon: 'mdi:car-parking-lights'
       friendly_name: 'Data entity for next transition group with "Faste lys"'
+  - unique_id: current_transition_fastelys
+    state: >-
+      {% set nowTimestamp = as_timestamp(utcnow()) - as_timestamp(strptime(as_timestamp(utcnow())|timestamp_custom('%Y-%m-%d', true),'%Y-%m-%d')) %}
+      {% set ns = namespace(currentTimer='',currentTimestamp=0,firstTimer='',firstTimestamp=0,seconds_to_complete_trans=0) %}
+      {% set ns.currentTimestamp = 0 %}
+      {% set ns.firstTimestamp = 60*60*24 %}
+      {% for item in states.pyscript %}
+        {% if 'huetrans_fastelys' in item.entity_id %}
+          {% set ns.seconds_to_complete_trans = 0 %}
+          {% for scn in state_attr(item.entity_id, 'Scenes') %}
+            {% set ns.seconds_to_complete_trans = ns.seconds_to_complete_trans + scn.timeinseconds + scn.delay|default(0) %}
+          {% endfor %}
+          {% set endtime_entity = state_attr(item.entity_id, 'endtime_entity') %}
+          {% if endtime_entity != None %}
+            {% if not '.' in endtime_entity %}
+              {% set endtime_entity = 'input_datetime.' + endtime_entity %}
+            {% endif %}
+            {% set transTimestamp = state_attr(endtime_entity, 'timestamp') - ns.seconds_to_complete_trans %}
+            {% if nowTimestamp > transTimestamp %}
+              {% if ns.currentTimestamp < transTimestamp %}
+                {% set ns.currentTimer = item.entity_id %}
+                {% set ns.currentTimestamp = transTimestamp %}
+              {% endif %}
+            {% endif %}
+            {% if ns.firstTimestamp > transTimestamp %}
+              {% set ns.firstTimer = item.entity_id %}
+              {% set ns.firstTimestamp = transTimestamp %}
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.firstTimestamp > ns.currentTimestamp %}
+        {% set ns.currentTimer = ns.firstTimer %}
+        {% set ns.currentTimestamp = ns.firstTimestamp %}
+      {% endif %}
+      {{ ns.currentTimer }}
+    attributes:
+      icon: 'mdi:car-parking-lights'
+      friendly_name: 'Data entity for current transition group with "Faste lys"'
   - unique_id: test_temp_diff
     state: '{{ (states("sensor.kontoret_temperature")|float(default=20)) - (states("input_number.termostat_kontoret")|float(default=20)) }}'
     attributes:
