@@ -5,6 +5,8 @@ from homeassistant.helpers import aiohttp_client,entity_registry
 import attr
 import aiohttp
 import datetime
+import re
+import json
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,6 +22,51 @@ state.persist("pyscript." + entity_prefix_thermo + "kontor", "off", {
         "light.termostat_kontoret"
     ]
 })
+
+@service
+def hue_event_trigger(trigger):
+    """yaml
+name: Trigger remote actions
+fields:
+    trigger:
+        description: Trigger data from an automation
+        required: true
+"""
+    # Convert the text version of the trigger data back to something we can load as a JSON object
+    trigger = re.compile("(\".*)(')([^\"]*)(')(\")").sub('\g<1>\\\"\g<3>\\\"\g<5>',trigger)
+    trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
+    trigger = re.compile("(<Event hue_event\[L\]:)([^>]*)(>)").sub('{\g<2>}',trigger)
+    trigger = trigger.replace("'","\"")
+    # _LOGGER.info(trigger)
+    # Load the JSON object and then get the event data
+    trigger_data = json.loads(trigger)
+    event = trigger_data["event"]
+    switch_id = event["id"]
+    switch_event = int(event["event"])
+    buttons = { 1: "On", 2: "DimUp", 3: "DimDown", 4: "Off" }
+    # ((int)button * 1000) + (int)state
+    switch_button = buttons.get(switch_event // 1000)
+    # initial_press: DON'T use this normally. It will trigger on ALL presses, whether short or long. Use short_release instead.
+    # repeat: Triggers after the button has been held for about a second. Then (I believe) it will re-trigger (every second or half-second or something?), thus it can be used e.g. for dimming up while holding.
+    # short_release: Triggers only if the button is released quickly
+    # long_release: Triggers after a hold is done. Probably most useful for "finishing" tasks or something.
+    states = { 0: "initial_press", 1: "repeat", 2: "short_release", 3: "long_release" }
+    switch_state = states.get(switch_event % 1000)
+    event_time = event["last_updated"]
+    log.debug("Hue Event triggered. switch_id: \"" + str(switch_id) + "\", switch_event: " + str(switch_event) + ", switch_button: " + str(switch_button) + ", switch_state: " + str(switch_state) + ", event_time: " + str(event_time))
+    area_ids = []
+    if switch_id == "bryterkontor":
+        area_ids = ["kontor"]
+    elif switch_id == "brytergang":
+        area_ids = ["gang_nede", "kontor"]
+    elif switch_id == "bryterkjokken":
+        area_ids = ["kjokken"]
+    if switch_button == "On" and switch_state == "short_release":
+        for area_id in area_ids:
+            pyscript.turn_on_ikea_lights_when_room_turned_on(area_id=area_id)
+    elif switch_button == "Off" and switch_state == "short_release":
+        for area_id in area_ids:
+            pyscript.turn_off_ikea_lights_when_room_turned_off(area_id=area_id)
 
 @service
 def toggle_thermostat(thermostat):
