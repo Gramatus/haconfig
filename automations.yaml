@@ -327,6 +327,7 @@
   - service: pyscript.set_current_trans_auto
     data:
       transition_group: Hoved
+      use_next: true
   - delay:
       hours: 0
       minutes: 0
@@ -662,6 +663,7 @@
   - service: pyscript.set_current_trans_auto
     data:
       transition_group: Faste lys
+      use_next: true
   - delay:
       hours: 0
       minutes: 0
@@ -738,6 +740,23 @@
     to: 'on'
   condition: []
   action:
+  - service: pyscript.turn_on_ikea_lights_when_room_turned_on
+    data:
+      trigger: '{{ trigger }}
+
+        '
+      entity_id: '{{ trigger.entity_id }}
+
+        '
+      area_id: '{{ area_id(trigger.entity_id) }}
+
+        '
+      disabled: true
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
   - service: pyscript.run_trans_for_turned_on_room
     data:
       trigger: '{{ trigger }}
@@ -799,3 +818,52 @@
       - light.ute
       - light.garasjen
   mode: single
+- id: '1634471378374'
+  alias: 'Hue: Reagere på knapp'
+  description: ''
+  trigger:
+  - platform: event
+    event_type: hue_event
+  condition: []
+  action:
+  - service: pyscript.hue_event_trigger
+    data:
+      trigger: '{{ trigger }}
+
+        '
+  mode: single
+- id: '1634471901458'
+  alias: 'Lysfade: Fange opp at lyset blir skrudd av'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: light.stue
+    to: 'off'
+  - platform: state
+    entity_id: light.gang_nede
+    to: 'off'
+  - platform: state
+    entity_id: light.kontor
+    to: 'off'
+  - platform: state
+    entity_id: light.bad
+    to: 'off'
+  - platform: state
+    entity_id: light.kjokken
+    to: 'off'
+  condition: []
+  action:
+  - service: pyscript.turn_off_ikea_lights_when_room_turned_off
+    data:
+      trigger: '{{ trigger }}
+
+        '
+      entity_id: '{{ trigger.entity_id }}
+
+        '
+      area_id: '{{ area_id(trigger.entity_id) }}
+
+        '
+      disabled: true
+  mode: parallel
+  max: 10
