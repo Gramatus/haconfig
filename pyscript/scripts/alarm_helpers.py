@@ -9,7 +9,10 @@ playlist_mapping = {
     "Våkneliste": "3FVKcokzHla6424Cj74LzL",
     "Lovsang": "0dUdJSf4v753IJwv8xDThH",
     "Alle gromlåter": "2pjB7wGkkoG9VYY8enMR5b",
-    "90's Country": "37i9dQZF1DWVpjAJGB70vU"
+    "90's Country": "37i9dQZF1DWVpjAJGB70vU",
+    "Classic Acoustic": "37i9dQZF1DX504r1DvyvxG",
+    "Classical Sunday Morning": "5Gmlxl0elXRNLL0heTF8Wz",
+    "Kristne gromlåter": "4dgE3OmDZxl5OOj5SSriWX"
 }
 
 @service
@@ -248,9 +251,13 @@ fields:
                     - "Lovsang"
                     - "Alle gromlåter"
                     - "90's Country"
+                    - "Classic Acoustic"
+                    - "Classical Sunday Morning"
 """
     playlistid = playlist_mapping[playlist]
+    input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + playlist)
     shuffleplaylistid = spotify_services.ensure_shuffled_playlist(playlistid)
+    input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
     input_text.set_value(entity_id="input_text.vekking_spilleliste_id", value=shuffleplaylistid)
     input_select.select_option(entity_id="input_select.vekking_valgt_spilleliste", option=playlist)
     _LOGGER.info("Updated shuffle shadow playlist. Now setting selected playlist for wakeup to: \"" + playlist + "\" (original id: \"" + playlistid + "\", shuffle playlist id: \"" + shuffleplaylistid + "\")")
@@ -261,10 +268,28 @@ def set_wakeup_trans():
 name: Set wakeup transition endtime
 description: Set the endtime for the wakeup transition if the alarm time changes
 """
+    # If we change the alarm between 1AM and wakeup time, the "trigger times" for fades have already been set and we need to reset them
+    midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone()
+    seconds_since_midnight = (datetime.datetime.now().astimezone() - midnight).total_seconds()
+    if seconds_since_midnight > (60*60)-30 and seconds_since_midnight < (60*60)+30:
+        log.info("Currently at the exact moment when fade trigger times are set, waiting 60 seconds until that has finished")
+        task.sleep(60)
+        seconds_since_midnight = (datetime.datetime.now().astimezone() - midnight).total_seconds()
+    wakeup_time = state.getattr("input_datetime.vekking")["timestamp"]
+    if seconds_since_midnight > (60*60) and seconds_since_midnight < wakeup_time:
+        log.info("We are now between 1AM and wakeup time, should reset fade trigger times")
+        pyscript.set_trans_start_time(transition_group="Hoved")
+        pyscript.set_trans_start_time(transition_group="Faste lys")
+    else:
+        log.info("All good")
+    return
+    # Code below not needed anymore
     wakeup_time = state.getattr("input_datetime.vekking")["timestamp"]
     data = state.getattr("pyscript.huetrans_hoved_vekking")
-    endtime_entity = "input_datetime." + data["endtime_entity"]
+    endtime_entity = data["endtime_entity"]
+    if not "." in endtime_entity:
+        endtime_entity = "input_datetime." + endtime_entity
     # The wakeup transition runs for 60*60 seconds, but half is before wakeup and half after
     wakeup_endtime = wakeup_time + 30*60
     wakeup_endtime_str = str(datetime.timedelta(seconds=wakeup_endtime))
-    input_datetime.set_datetime(entity_id=endtime_entity,time=wakeup_endtime_str)
+    input_datetime.set_datetime(entity_id=endtime_entity, time=wakeup_endtime_str)
