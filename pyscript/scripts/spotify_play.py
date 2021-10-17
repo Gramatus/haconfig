@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 # This cannot be done with the normal spotify integration (I think), so I need to use spotcast - but I need to play it on whatever is already the active entity...
 
 @service
-async def play_playlist_random(playlistid, device=None, shuffle_type="Reuse shadow playlist", fadein_seconds=10, final_volume=0.9, delay_seconds_start_spotcast=5):
+async def play_playlist_random(playlistid, device=None, shuffle_type="Update shadow playlist", fadein_seconds=10, final_volume=0.9, delay_seconds_start_spotcast=5):
     """yaml
 name: Play playlist with or without shuffle
 description: Starts playing the playlist in shuffle mode on the "current" playing entity (default is media_player.kjokkenet)
@@ -68,7 +68,10 @@ fields:
         device = "media_player.godehol"
     player_attr = state.getattr(device)
     _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
-    spotcast.start(entity_id=device, uri="spotify:playlist:" + playlistid, start_volume=0)
+    spotify_uri = "spotify:playlist:" + playlistid
+    if ":" in playlistid:
+        spotify_uri = playlistid
+    spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
     source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
         # _LOGGER.debug("  - Getting ID for the related shuffled shadow playlist")
@@ -78,7 +81,9 @@ fields:
             shuffle_type = "Update shadow playlist"
     if shuffle and shuffle_type == "Update shadow playlist":
         _LOGGER.info("  - Updating the related shuffled shadow playlist")
+        input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + source_playlistid)
         playlistid = spotify_services.ensure_shuffled_playlist(source_playlistid)
+        input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
     # Stuff fails if the connection is not ready (i.e. Spotify is not aware of an active playback device)
     _LOGGER.info("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
     await asyncio.sleep(delay_seconds_start_spotcast)
@@ -89,6 +94,15 @@ fields:
     await asyncio.sleep(delay_seconds)
     _LOGGER.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
     pyscript.volume_increase(fadein_seconds=fadein_seconds, device=device, initial_volume = 0.0, final_volume = final_volume)
+
+def ummm():
+    delay_seconds = 5
+    spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
+    _LOGGER.info("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
+    await asyncio.sleep(delay_seconds)
+    _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
+    pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
+
 
 @service
 def play_playlist_random_old(playlistid):
@@ -111,7 +125,7 @@ fields:
 @service
 def play_playlist_random_godehol(playlistid):
     """yaml
-name: Play next episode
+name: Play a palylist randomly on Godehol (old code?)
 description: Starts playing the playlist in shuffle mode on the "Godehol" group
 fields:
     playlistid:
@@ -127,7 +141,7 @@ fields:
         spotcast.start(entity_id="media_player.godehol",uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
 @service
-def play_next_podcast_episode(showid):
+def play_next_podcast_episode(showid, device=None):
     """yaml
 name: Play next episode
 description: Plays the next unplayed episode (or the currently playing if one is not finnished) of the podcast with the given showid
@@ -138,12 +152,77 @@ fields:
         example: 2VarjDoOdeWCYjCtLLdkSM
         selector:
             text:
+    device:
+        description: Media player (ChromeCast device) to play playlist on
+        required: false
+        example: media_player.spotify_gramatus
+        selector:
+            entity:
+                domain: media_player
 """
-    _LOGGER.debug("TODO: update code for handling episodes in __init__.py for spotcast / fork repository...")
-    if showid is not None:
-        playingEntity, playState = getPlayingEntity()
-        _LOGGER.debug("Calling spotcast.start")
-        spotcast.start(entity_id=playingEntity,uri="spotify:show:"+showid)
+    if showid is None:
+        log.warning("No showid supplied")
+        return
+    if device == None:
+        device = "media_player.godehol"
+    log.info("Finding first episode that is not finished in show with id: " + showid)
+    start_at = 0 # TODO: Save known current episode somewhere so I don't need to start looking at position #1
+    offset_from_end = 0
+    episodeToPlay = None
+    reached_point = False
+    loaded_episodes = 50
+    show = spotify_services.spotify_get("/shows/" + showid + "?market=NO", ReturnRaw=True)
+    total_episodes = show["total_episodes"]
+    offset = 0
+    descending = None
+    while reached_point == False and loaded_episodes > 0:
+        episodes = spotify_services.spotify_get("/shows/" + showid + "/episodes?offset=" + str(start_at) + "&limit=50&market=NO", GetAll=False)
+        start_at = start_at + len(episodes)
+        if descending == None:
+            if len(episodes) > 2:
+                descending = episodes[0]["release_date"] > episodes[1]["release_date"]
+                if descending:
+                    log.info("descending")
+                else:
+                    log.info("ascending")
+            else:
+                descending = False
+        for episode in episodes:
+            fully_played = episode["resume_point"]["fully_played"]
+            # log.info(episode["name"] + ": " + str(fully_played))
+            if descending:
+                if not fully_played:
+                    offset_from_end = offset_from_end + 1
+                else:
+                    episodeToPlay = episode
+                    reached_point = True
+                    break
+            else:
+                if fully_played:
+                    offset = offset + 1
+                    episodeToPlay = episode
+                else:
+                    reached_point = True
+                    break
+    if descending:
+        offset = total_episodes - offset_from_end
+    log.info("Last played episode #" + str(offset) + ": " + episodeToPlay["name"])
+    spotify_uri = "spotify:show:"+showid
+    # spotify_services.spotify_put("/me/player/play", {
+    #     "context_uri": spotify_uri,
+    #     "offset": {
+    #         "position": offset
+    #     }
+    # })
+    player_attr = state.getattr(device)
+    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with a rather random playlist since spotcast overrides my show selection")
+    delay_seconds = 5
+    spotcast_uri = "spotify:playlist:37i9dQZF1DX20xDs0SXeZu"
+    spotcast.start(entity_id=device, uri=spotcast_uri)
+    _LOGGER.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
+    await asyncio.sleep(delay_seconds)
+    _LOGGER.info("  - Playing podcast on spotify: \"" + spotify_uri + "\"")
+    pyscript.play_playlist_at_position(playlistid=spotify_uri, position=offset+1, shuffle=False)
 
 @service
 def play_podcast_episode(episodeid):
@@ -211,7 +290,9 @@ fields:
         selector:
             text:
 """
+    input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + playlistid)
     shuffle_playlist_id = spotify_services.ensure_shuffled_playlist(playlistid)
+    input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
     return shuffle_playlist_id
 
 @service
@@ -248,8 +329,11 @@ fields:
         selector:
             boolean:
 """
+    spotify_uri = "spotify:playlist:" + playlistid
+    if ":" in playlistid:
+        spotify_uri = playlistid
     spotify_services.spotify_put("/me/player/play", {
-        "context_uri": "spotify:playlist:"+playlistid,
+        "context_uri": spotify_uri,
         "offset": {
             "position": position-1
         }
