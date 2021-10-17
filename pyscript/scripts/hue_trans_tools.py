@@ -14,7 +14,7 @@ import copy
 import asyncio
 import re
 
-_LOGGER = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 entity_prefix = "huetrans"
 state_prefix = "pyscript." + entity_prefix
@@ -30,7 +30,7 @@ def get_current_trans(transition_group):
 def get_scene_to_activate_with_time_and_previous(transition_group):
     current_trans = get_current_trans(transition_group)
     if current_trans == None:
-        _LOGGER.info("No transition currently active")
+        log.info("No transition currently active")
         return
     seconds_to_target, seconds_to_target_from_midnight = get_seconds_to_target(transition_group)
 
@@ -49,7 +49,7 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
         end = state.getattr(endtime_entity)["timestamp"]
         seconds_start_to_end = end - start
         time_factor = seconds_start_to_end / seconds_to_complete_trans
-        _LOGGER.info("time_factor: " + str(time_factor) + ", Original running time: " + str(datetime.timedelta(seconds=seconds_to_complete_trans)) + ", Actual running time: " + str(datetime.timedelta(seconds=seconds_start_to_end)))
+        log.info("time_factor: " + str(time_factor) + ", Original running time: " + str(datetime.timedelta(seconds=seconds_to_complete_trans)) + ", Actual running time: " + str(datetime.timedelta(seconds=seconds_start_to_end)))
 
     seconds_for_remaining_scenes = 0
     scene_that_should_be_active = None
@@ -66,7 +66,7 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
             delay = scn["delay"]
         # Max allowed time from Hue is 65535 * 100ms, i.e. 1:49:13, so we limit to that (anything getting above that will change the "ratios", but that is acceptable)
         if scene_time > 65535/10:
-            _LOGGER.info("Wanted run time makes this scene run longer that 1:49:13 (max from Hue), so run time is truncated. Wanted run time for \"" + scn["name"] + "\": " + str(datetime.timedelta(seconds=scene_time)))
+            log.info("Wanted run time makes this scene run longer that 1:49:13 (max from Hue), so run time is truncated. Wanted run time for \"" + scn["name"] + "\": " + str(datetime.timedelta(seconds=scene_time)))
             scene_time = 65535/10
         seconds_for_remaining_scenes += scene_time + delay
         scene_that_should_be_active["normaltimeinseconds"] = scene_time
@@ -90,13 +90,13 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
     start_time = str(datetime.timedelta(seconds=seconds_to_target_from_midnight-seconds_for_remaining_scenes))
     final_endtime = str(datetime.timedelta(seconds=seconds_to_target_from_midnight))
     if target_found == False:
-        _LOGGER.info("Run time for \"" + current_trans["friendly_name"] + "\": " + start_time + " to " + final_endtime + ". Not ready to run this transition yet.")
+        log.info("Run time for \"" + current_trans["friendly_name"] + "\": " + start_time + " to " + final_endtime + ". Not ready to run this transition yet.")
         return {
             "current": None,
             "previous": None
         }
     else:
-        _LOGGER.info("Remaining run time for \"" + current_trans["friendly_name"] + "\": " + start_time + " to " + final_endtime + ".")
+        log.info("Remaining run time for \"" + current_trans["friendly_name"] + "\": " + start_time + " to " + final_endtime + ".")
         return {
             "current": scene_that_should_be_active,
             "previous": previous_scene
@@ -105,12 +105,12 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
 def get_seconds_to_target(transition_group):
     current_trans = get_current_trans(transition_group)
     if current_trans == None:
-        _LOGGER.info("No transition currently active")
+        log.info("No transition currently active")
         return
     now = datetime.datetime.now()
     endtime_entity = current_trans["endtime_entity"]
     if endtime_entity == None:
-        _LOGGER.info(current_trans["friendly_name"] + " has no endtime entity defined")
+        log.info(current_trans["friendly_name"] + " has no endtime entity defined")
         return
     if not "." in endtime_entity:
         endtime_entity = "input_datetime." + endtime_entity
@@ -138,10 +138,10 @@ def ensure_fade_diff(entity_id_before, entity_id_after, min_diff, logname_before
     after_endtime = state.getattr(entity_id_after)["timestamp"]
     diff = after_endtime - before_endtime
     if diff < min_diff:
-        _LOGGER.info("Changing fade end time - " + logname_before + " time collides with " + logname_after + ", delaying " + logname_after + ". " + logname_before + " value: " + str(datetime.timedelta(seconds=before_endtime))+ ", " + logname_after + " value: " + str(datetime.timedelta(seconds=after_endtime)) + ", wanted diff: " + str(min_diff) + ", actual diff: " + str(diff))
+        log.info("Changing fade end time - " + logname_before + " time collides with " + logname_after + ", delaying " + logname_after + ". " + logname_before + " value: " + str(datetime.timedelta(seconds=before_endtime))+ ", " + logname_after + " value: " + str(datetime.timedelta(seconds=after_endtime)) + ", wanted diff: " + str(min_diff) + ", actual diff: " + str(diff))
         input_datetime.set_datetime(entity_id=entity_id_after,time=str(datetime.timedelta(seconds=before_endtime+min_diff)))
     else:
-        _LOGGER.info("Not changing fade end time - " + logname_before + " time does not collide with " + logname_after + ". " + logname_before + " value: " + str(datetime.timedelta(seconds=before_endtime))+ ", " + logname_after + " value: " + str(datetime.timedelta(seconds=after_endtime)) + ", wanted diff: " + str(min_diff) + ", actual diff: " + str(diff))
+        log.info("Not changing fade end time - " + logname_before + " time does not collide with " + logname_after + ". " + logname_before + " value: " + str(datetime.timedelta(seconds=before_endtime))+ ", " + logname_after + " value: " + str(datetime.timedelta(seconds=after_endtime)) + ", wanted diff: " + str(min_diff) + ", actual diff: " + str(diff))
 
 @service
 def reset_trans():
@@ -184,7 +184,7 @@ fields:
     sensor = "sensor.template_current_transition_" + transition_group
     if use_next:
         sensor = "sensor.template_next_transition_" + transition_group
-    _LOGGER.info("Reading state: " + sensor)
+    log.info("Reading state: " + sensor)
     next_trans_group = state.get(sensor)
     set_current_trans(next_trans_group)
 
@@ -234,11 +234,11 @@ fields:
                 next_trans = data
                 next_trans_timestamp = starttime
     if next_trans != None:
-        _LOGGER.info("Neste fade med " + transition_group + " starter kl. " + next_trans["start_time"])
-        _LOGGER.debug(next_trans)
+        log.info("Neste fade med " + transition_group + " starter kl. " + next_trans["start_time"])
+        log.debug(next_trans)
         input_datetime.set_datetime(entity_id="input_datetime.lysfade_start_neste_" + transition_group + "fade",time=next_trans["start_time"])
     else:
-        _LOGGER.info("No more transitions scheduled for today for \"" + transition_group + "\"...")
+        log.info("No more transitions scheduled for today for \"" + transition_group + "\"...")
 
 @service
 def set_current_trans(trans):
@@ -259,9 +259,9 @@ fields:
     for val in state.names(domain="pyscript"):
         if entity_prefix+"_"+transition_group in val:
             state.set(val,"off")
-    _LOGGER.info("Set state to off for all transitions in group: " + transition_group)
+    log.info("Set state to off for all transitions in group: " + transition_group)
     state.set(trans,"on")
-    _LOGGER.info("Set state to on for: " + trans)
+    log.info("Set state to on for: " + trans)
 
 @service
 def trigger_transition_scene(transition_group, only_for_room=None):
@@ -300,18 +300,18 @@ fields:
             only_for_room = only_for_room_attr["entity_id"]
         # If we are currently running a transition, don't run the "single room" action (it is probably triggered by the transition actually turning on the lights)
         if state.get("timer.lysfade_aktiv_trans_trigger_" + transition_group) == "active":
-            _LOGGER.info("Skipping only_for_room run for: " + only_for_room)
+            log.info("Skipping only_for_room run for: " + only_for_room)
             return
-        _LOGGER.info("Will ONLY run for the following rooms on this run: " + only_for_room)
+        log.info("Will ONLY run for the following rooms on this run: " + only_for_room)
     else:
         timer.start(entity_id="timer.lysfade_aktiv_trans_trigger_" + transition_group)
 
     if current_trans == None:
-        _LOGGER.info("No transition currently active")
+        log.info("No transition currently active")
         return
 
     scenes = get_scene_to_activate_with_time_and_previous(transition_group)
-    _LOGGER.info(scenes)
+    log.info(scenes)
 
     alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
     alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
@@ -363,7 +363,7 @@ fields:
             await asyncio.sleep(delay_between_triggers)
 
     if has_finished:
-        _LOGGER.info("This transition has finished, but is still the current transition. Setting time for next transition group to start.")
+        log.info("This transition has finished, but is still the current transition. Setting time for next transition group to start.")
         set_trans_start_time(transition_group)
         idle_delay = (prefade_duration - delay) + 15
         log.info("Waiting " + str(idle_delay) + " seconds before setting fadeend entities to idle")
@@ -378,18 +378,18 @@ fields:
             timetotarget = 0
         wait_time = timetotarget + 5*60
         if not alarmActive:
-            _LOGGER.info("Alarm is not active, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
+            log.info("Alarm is not active, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
         elif not alarmLightActive:
-            _LOGGER.info("Alarm is active, but without lights, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
+            log.info("Alarm is active, but without lights, thus the wakeup fade should not run. Starting timer, without any scenes activating, to trigger a new evaluation in: " + str(datetime.timedelta(seconds=wait_time)))
         timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=wait_time)
         return
 
     if anything_activated:
-        _LOGGER.info("Waiting " + str(prefade_duration) + " seconds for the previous scene to load")
+        log.info("Waiting " + str(prefade_duration) + " seconds for the previous scene to load")
         await asyncio.sleep(prefade_duration)
-        _LOGGER.info("Now loading the actual scene")
+        log.info("Now loading the actual scene")
     lysfade_settings = state.getattr("pyscript.transtools_settings")
-    _LOGGER.info("Next scene: \"" + scenes["current"]["name"] + "\", no. " + str(scenes["current"]["index"]) + " of " + str(len(current_trans["Scenes"])))
+    log.info("Next scene: \"" + scenes["current"]["name"] + "\", no. " + str(scenes["current"]["index"]) + " of " + str(len(current_trans["Scenes"])))
     delay = 0
     for room in current_trans["Rooms"]:
         if only_for_room != None and only_for_room != room:
@@ -409,7 +409,7 @@ fields:
         "parentTrans": current_trans
     })
     duration = round(scenes["current"]["timeinseconds"] + scenes["current"]["delay"], 0)
-    _LOGGER.info("Starting timer to trigger next scene in: " + str(datetime.timedelta(seconds=duration)))
+    log.info("Starting timer to trigger next scene in: " + str(datetime.timedelta(seconds=duration)))
     timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=duration-delay)
 
 def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, force_run=False, ignore_currentscene=False):
@@ -443,13 +443,13 @@ def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, fo
     scene_activated = False
     already_at_scene = False
     if already_at_scene:
-        _LOGGER.info("  > " + room_entity + ": Room is already at, or activating, the correct scene. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+        log.info("  > " + room_entity + ": Room is already at, or activating, the correct scene. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
         return
     elif not lights_on:
-        _LOGGER.info("  > " + room_entity + ": Lights are not on, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+        log.info("  > " + room_entity + ": Lights are not on, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
         return
     elif not trans_active:
-        _LOGGER.info("  > " + room_entity + ": Transitions are disabled, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+        log.info("  > " + room_entity + ": Transitions are disabled, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
         return
     else:
         debug_info = ""
@@ -461,13 +461,13 @@ def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, fo
             debug_info = " DEBUG MODE, skipping:"
         if "loginfo" not in scn:
             scn["loginfo"] = "Triggering scene"
-        _LOGGER.info("  > " + room_entity + ":" + debug_info + " " +scn["loginfo"] + " \"" + scene_name + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
+        log.info("  > " + room_entity + ":" + debug_info + " " +scn["loginfo"] + " \"" + scene_name + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
         roomsettings["currentScene"] = scn["id"]
         roomsettings["currentSceneName"] = scene_name
         scene_activated = True
     # else:
     #     else:
-    #         _LOGGER.info("  > " + room_entity + ": Skipping start for an unknown reason. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+    #         log.info("  > " + room_entity + ": Skipping start for an unknown reason. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
 
     try:
         state.setattr("pyscript.transtools_settings." + room_key, roomsettings)
@@ -520,10 +520,10 @@ fields:
                 device_class: trans_active
 """
     if state.get(room) == "on":
-        _LOGGER.info("Set state to off for: " + room)
+        log.info("Set state to off for: " + room)
         state.set(room,"off")
     else:
-        _LOGGER.info("Set state to on for: " + room)
+        log.info("Set state to on for: " + room)
         state.set(room,"on")
 
 @service
@@ -551,7 +551,7 @@ fields:
     trigger = trigger.replace(" None"," null")
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
-    _LOGGER.debug("Entity that triggered the automation: " + trigger_data["entity_id"])
+    log.debug("Entity that triggered the automation: " + trigger_data["entity_id"])
     trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])
 
 @service
