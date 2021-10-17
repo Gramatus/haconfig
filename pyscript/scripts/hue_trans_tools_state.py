@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import datetime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,6 +19,47 @@ state.persist("pyscript.active_trans_scenes","n/a",{
     "icon": "mdi:led-strip"
 })
 
+ikea_scenes_kveldslys = [
+                {
+                    "index": 1,
+                    "name": "IKEA 2890K 100 %",
+                    "timeinseconds": (60*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 2890
+                },
+                {
+                    "index": 2,
+                    "name": "IKEA 2300K 75 %",
+                    "timeinseconds": (60*60)+(0),
+                    "brightness": 191,
+                    "kelvin": 2300
+                },
+                {
+                    "index": 3,
+                    "name": "IKEA 2150K 50 %",
+                    "timeinseconds": (30*60)+(0),
+                    "brightness": 127,
+                    "kelvin": 2150
+                },
+                {
+                    "index": 4,
+                    "name": "IKEA Kveldsoransj 25 % (color 40 %)",
+                    "timeinseconds": (30*60)+(0),
+                    "brightness": 102,
+                    "kelvin": 2150,
+                    "hue": 4041,
+                    "sat": 255
+                },
+                {
+                    "index": 5,
+                    "name": "IKEA Kveldsrød 1 %",
+                    "timeinseconds": (30*60)+(0),
+                    "brightness": 25,
+                    "kelvin": 2150,
+                    "hue": 2442,
+                    "sat": 255
+                }
+            ]
 state.persist(state_prefix+"_hoved_kveldslys","off",{
     "friendly_name": "Fadeoppsett: Kveldslys",
     "device_class": "Fadeoppsett",
@@ -68,13 +110,82 @@ state.persist(state_prefix+"_hoved_kveldslys","off",{
         "light.stue",
         "light.kontor",
         "light.kjokken"
+    ],
+    "IKEA": [
+        {
+            "room": "light.gang_nede",
+            "lights": [
+                "light.gang_nede_1",
+                "light.gang_nede_2",
+                "light.gang_nede_3"
+            ],
+            "Scenes": ikea_scenes_kveldslys
+        },
+        {
+            "room": "light.kjokken",
+            "lights": [
+                "light.kjokkenbenk_komfyr",
+                "light.kjokkenbenk_vindu",
+                "light.kjokken_oppa_skap",
+                "light.kjokken_hylle"
+            ],
+            "Scenes": ikea_scenes_kveldslys
+        },
+        {
+            "room": "light.kontor",
+            "lights": [
+                "light.kontor_hoyre",
+                "light.kontor_venstre"
+            ],
+            "Scenes": [
+                {
+                    "index": 1,
+                    "name": "IKEA Kontor Off",
+                    "timeinseconds": (60*60)+(0),
+                    "brightness": 0
+                },
+            ]
+        }
     ]
 })
+
+ikea_scenes_vekking = [
+                {
+                    "index": 1,
+                    "name": "IKEA Kveldsrød 1 %",
+                    "timeinseconds": (0*60)+(10),
+                    "brightness": 25,
+                    "hue": 2442,
+                    "sat": 255
+                },
+                {
+                    "index": 2,
+                    "name": "IKEA Kveldsoransj 25 %",
+                    "timeinseconds": (14*60)+(50),
+                    "brightness": 102,
+                    "hue": 4041,
+                    "sat": 255
+                },
+                {
+                    "index": 3,
+                    "name": "IKEA 2300K 100 %",
+                    "timeinseconds": (15*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 2300
+                },
+                {
+                    "index": 4,
+                    "name": "IKEA 3000K 100 %",
+                    "timeinseconds": (30*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 3000
+                }
+            ]
 state.persist(state_prefix+"_hoved_vekking","off",{
     "friendly_name": "Fadeoppsett: Vekking",
     "device_class": "Fadeoppsett",
     "icon": "mdi:table-settings",    
-    "endtime_entity": entity_prefix+"_vekking_endtime",
+    "endtime_entity": "sensor.template_huetrans_vekking_endtime_auto",
     "unique_id": entity_prefix+"_settings_vekking",
     "force_run": True,
     "Scenes": [
@@ -115,19 +226,54 @@ state.persist(state_prefix+"_hoved_vekking","off",{
         "light.soverom",
         "light.kontor",
         "light.kjokken"
+    ],
+    "IKEA": [
+        {
+            "room": "light.gang_nede",
+            "lights": [
+                "light.gang_nede_1",
+                "light.gang_nede_2",
+                "light.gang_nede_3"
+            ],
+            "Scenes": ikea_scenes_vekking
+        },
+        {
+            "room": "light.kjokken",
+            "lights": [
+                "light.kjokkenbenk_komfyr",
+                "light.kjokkenbenk_vindu",
+                "light.kjokken_oppa_skap",
+                "light.kjokken_hylle"
+            ],
+            "Scenes": ikea_scenes_vekking
+        }
     ]
 })
+
 state.persist(state_prefix+"_hoved_bonnetid","off",{
     "friendly_name": "Fadeoppsett: Bønnetid",
     "device_class": "Fadeoppsett",
     "icon": "mdi:table-settings",
     "Scenes": []
 })
+
+ikea_scenes_arbeidslys = [
+                {
+                    "index": 1,
+                    "name": "IKEA 4291K 100 %",
+                    "timeinseconds": (30*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 4291
+                }
+            ]
 state.persist(state_prefix+"_hoved_arbeidslys","off",{
     "friendly_name": "Fadeoppsett: Arbeidslys",
     "device_class": "Fadeoppsett",
     "icon": "mdi:table-settings",
-    "endtime_entity": entity_prefix+"_arbeidslys_endtime",
+    "endtime_entity": "sensor.template_huetrans_arbeidslys_endtime_auto",
+    "normal_endtime_entity": entity_prefix+"_arbeidslys_endtime",
+    "after_entity": "sensor.template_huetrans_vekking_endtime_auto",
+    "min_diff": 60*60,
     "unique_id": entity_prefix+"_settings_arbeidslys",
     "Scenes": [
         {
@@ -137,6 +283,42 @@ state.persist(state_prefix+"_hoved_arbeidslys","off",{
             "id": "a5QgoQtTS4v8EEb",
             "timeinseconds": (30*60)+(0)
         }
+    ],
+    "Rooms": [
+        "light.gang_nede",
+        "light.bad",
+        "light.stue",
+        "light.kontor",
+        "light.kjokken"
+    ],
+    "IKEA": [
+        {
+            "room": "light.gang_nede",
+            "lights": [
+                "light.gang_nede_1",
+                "light.gang_nede_2",
+                "light.gang_nede_3"
+            ],
+            "Scenes": ikea_scenes_arbeidslys
+        },
+        {
+            "room": "light.kjokken",
+            "lights": [
+                "light.kjokkenbenk_komfyr",
+                "light.kjokkenbenk_vindu",
+                "light.kjokken_oppa_skap",
+                "light.kjokken_hylle"
+            ],
+            "Scenes": ikea_scenes_arbeidslys
+        },
+        {
+            "room": "light.kontor",
+            "lights": [
+                "light.kontor_hoyre",
+                "light.kontor_venstre"
+            ],
+            "Scenes": ikea_scenes_arbeidslys
+        }
     ]
 })
 
@@ -144,7 +326,10 @@ state.persist(state_prefix+"_fastelys_morgen","off",{
     "friendly_name": "Fadeoppsett: Basislys morgen",
     "device_class": "Fadeoppsett",
     "icon": "mdi:table-settings",
-    "endtime_entity": entity_prefix+"_basislys_morgen_endtime",
+    "endtime_entity": "sensor.template_huetrans_fastelys_morgen_endtime_auto",
+    "normal_endtime_entity": entity_prefix+"_arbeidslys_endtime",
+    "after_entity": "sensor.template_huetrans_vekking_endtime_auto",
+    "min_diff": -30*60,
     "unique_id": entity_prefix+"_settings_basislys_morgen",
     "Scenes": [
         {
@@ -158,13 +343,33 @@ state.persist(state_prefix+"_fastelys_morgen","off",{
     "Rooms": [
         "light.gang_oppe",
         "light.stue_hjorne"
+    ],
+    "IKEA": [
+        {
+            "Scenes": [
+                {
+                    "index": 1,
+                    "name": "IKEA 2300K 100 %",
+                    "timeinseconds": (15*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 2300
+                }
+            ],
+            "room": "light.gang_nede_vindu",
+            "lights": [
+                "light.gang_nede_vindu"
+            ]
+        }
     ]
 })
 state.persist(state_prefix+"_fastelys_dag","off",{
     "friendly_name": "Fadeoppsett: Basislys dag",
     "device_class": "Fadeoppsett",
     "icon": "mdi:table-settings",
-    "endtime_entity": entity_prefix+"_basislys_dag_endtime",
+    "endtime_entity": "sensor.template_huetrans_fastelys_dag_endtime_auto",
+    "normal_endtime_entity": entity_prefix+"_arbeidslys_endtime",
+    "after_entity": "sensor.template_huetrans_fastelys_morgen_endtime_auto",
+    "min_diff": 1*60*60+15*60,
     "unique_id": entity_prefix+"_settings_basislys_dag",
     "Scenes": [
         {
@@ -177,7 +382,25 @@ state.persist(state_prefix+"_fastelys_dag","off",{
     ],
     "Rooms": [
         "light.gang_oppe",
-        "light.stue_hjorne"
+        "light.stue_hjorne",
+        "light.gang_nede_vindu"
+    ],
+    "IKEA": [
+        {
+            "Scenes": [
+                {
+                    "index": 1,
+                    "name": "IKEA 4291K 100 %",
+                    "timeinseconds": (60*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 4291
+                }
+            ],
+            "room": "light.gang_nede_vindu",
+            "lights": [
+                "light.gang_nede_vindu"
+            ]
+        }
     ]
 })
 state.persist(state_prefix+"_fastelys_ettermiddag","off",{
@@ -197,7 +420,25 @@ state.persist(state_prefix+"_fastelys_ettermiddag","off",{
     ],
     "Rooms": [
         "light.gang_oppe",
-        "light.stue_hjorne"
+        "light.stue_hjorne",
+        "light.gang_nede_vindu"
+    ],
+    "IKEA": [
+        {
+            "Scenes": [
+                {
+                    "index": 1,
+                    "name": "IKEA 2650K 100 %",
+                    "timeinseconds": (60*60)+(0),
+                    "brightness": 255,
+                    "kelvin": 2650
+                }
+            ],
+            "room": "light.gang_nede_vindu",
+            "lights": [
+                "light.gang_nede_vindu"
+            ]
+        }
     ]
 })
 state.persist(state_prefix+"_fastelys_kveld","off",{
@@ -217,14 +458,36 @@ state.persist(state_prefix+"_fastelys_kveld","off",{
     ],
     "Rooms": [
         "light.gang_oppe",
-        "light.stue_hjorne"
+        "light.stue_hjorne",
+        "light.gang_nede_vindu"
+    ],
+    "IKEA": [
+        {
+            "Scenes": [
+                {
+                    "index": 1,
+                    "name": "IKEA 2300K 10 %",
+                    "timeinseconds": (60*60)+(0),
+                    "brightness": 25,
+                    "kelvin": 2300
+                }
+            ],
+            "room": "light.gang_nede_vindu",
+            "lights": [
+                "light.gang_nede_vindu"
+            ]
+        }
     ]
 })
 
-
+@service
 def update_room_entities():
-    _LOGGER.info("Started to update room entities - waiting 60 seconds")
-    asyncio.sleep(60)
+    ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+    if ha_uptime_seconds < 5*60:
+        _LOGGER.info("Started to update room entities - waiting 60 seconds")
+        asyncio.sleep(60)
+    else:
+        _LOGGER.info("Started to update room entities")
     all_rooms = list()
     for val in state.names(domain="pyscript"):
         if entity_prefix+"_" in val:
@@ -253,4 +516,4 @@ def update_room_entities():
         })
     _LOGGER.info("Finished updating room entities")
 
-update_room_entities()
+pyscript.update_room_entities()
