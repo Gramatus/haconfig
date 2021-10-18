@@ -431,6 +431,8 @@ def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, fo
     trans_active = roomsettings["trans_active"]
     already_at_scene = roomsettings["currentScene"] == targetid and not ignore_currentscene
     transition_time = round(scn["timeinseconds"] - delay, 0)
+    if transition_time < 0:
+        transition_time = 0.4
     if force_run:
         lights_on = True
         trans_active = True
