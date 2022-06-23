@@ -14,7 +14,7 @@ http:
   #  - https://www.home-assistant.io
   ip_ban_enabled: true
   login_attempts_threshold: 10
-    
+
 # Text to speech
 tts:
   - platform: google_translate
@@ -73,8 +73,8 @@ logger:
     homeassistant.components.media_player: warn
     homeassistant.components.cast: warn
     homeassistant.components.cast.media_player: warn
-    custom_components.spotcast: warn
-    custom_components.harmony: debug
+    custom_components.spotcast: info
+    custom_components.harmony: info
     coap: warn
     homeassistant.components.auth: debug
     homeassistant.components.http.ban: debug
@@ -87,6 +87,8 @@ logger:
     hue_tools: debug
     fully_actions: debug
     spotify_play: info
+    # custom_components.pyscript.scripts.hue_trans_tools: debug
+    # hue_trans_tools: debug
     # Disable info logging from automations running all the time (that usually also has custom logging from my scripts if needed)
     homeassistant.components.automation.termostat_kontoret: warning
     homeassistant.components.automation.vekking_sikre_lysfade_pa_riktig_tidspunkt: warning
@@ -98,11 +100,22 @@ logger:
     homeassistant.components.automation.home_away_leave_home: warning
     homeassistant.components.automation.home_away_come_home: warning
   filters:
+    # Closing connection to hue bridge<
+    aiohue.v1[192.168.50.52]:
+      - "Connection to bridge closed."
     pychromecast.controllers:
       - "Receiver:channel_disconnected"
       - "Receiver:setting volume"
     pychromecast.socket_client:
       - "Received unknown namespace"
+      - "Failed to connect to service"
+      - "Error communicating with socket, resetting connection"
+      - "Error reading from socket."
+      - "Connection reestablished!"
+      - "Heartbeat timeout, resetting connection"
+    homeassistant.components.automation:
+      - ": Restarting"
+      - ": Running automation actions"
     # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
     # Login from localhost is probably nabu casa
     #homeassistant.components.http.ban:
