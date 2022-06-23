@@ -1,4 +1,5 @@
 - platform: spotcast
+  scan_interval: 604800
 # - platform: gramatus
 # - platform: roomtoggles
 - platform: uptime
