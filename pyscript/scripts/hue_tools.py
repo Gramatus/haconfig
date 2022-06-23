@@ -24,7 +24,7 @@ state.persist("pyscript." + entity_prefix_thermo + "kontor", "off", {
 })
 
 @service
-def hue_event_trigger(trigger):
+def hue_event_trigger(trigger): # , event, hue_event, entity_id, switch_event_type, switch_id, switch_event_button_id
     """yaml
 name: Trigger remote actions
 fields:
@@ -111,7 +111,7 @@ description: Start the wakeup light routine
             log.debug("Response from Hue: Status "+str(response.status)+", reply: "+response.text())
 
 @service
-def turn_on_scene_by_id(scene_id, group_id=None, transitionhours=0, transitionmins=0, transitionsecs=0, transitionms=400, no_logging=False):
+async def turn_on_scene_by_id(scene_id, group_id=None, transitionhours=0, transitionmins=0, transitionsecs=0, transitionms=400, no_logging=False):
     """yaml
 name: Turn on scene by ID
 description: Turn on a Hue scene based on the scene ID (will use group 0 if no group is specified)

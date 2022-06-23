@@ -536,13 +536,18 @@ fields:
     trigger:
         description: Trigger data from an automation
         required: true
+    entity_id:
+        description: Entity that caused this to trigger
+        required: true
 """
     trigger = str(trigger)
-    log.info(trigger)
+    # log.info("Original trigger: " + trigger)
     # Remove info on scenes - we don't need it an thus I haven't worked on reformatting it to JSON
     trigger = re.compile("hue_scenes={[^}]*}, ").sub('',trigger)
     # Remove info on lights - we don't need it an thus I haven't worked on reformatting it to JSON
     trigger = re.compile("lights={[^}]*}, ").sub('',trigger)
+    # Remove info on color modes - we don't need it an thus I haven't worked on reformatting it to JSON
+    trigger = re.compile("supported_color_modes=\[[^\]]*\], ").sub('',trigger)
     trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\g<1>,\g<3>',trigger)
     comma_replacement = ";;;"
     for item in re.findall("\[[^]]*\]", trigger):
@@ -556,9 +561,10 @@ fields:
     trigger = trigger.replace("]\",","],")
     trigger = trigger.replace("'","\"")
     trigger = trigger.replace(" None"," null")
-    log.info(trigger)
+    # log.info("Cleaned trigger: " + trigger)
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
+    # log.info(trigger_data)
     log.debug("Entity that triggered the automation: " + trigger_data["entity_id"])
     trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])
 
