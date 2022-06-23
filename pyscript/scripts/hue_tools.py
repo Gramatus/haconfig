@@ -173,30 +173,29 @@ fields:
     friendly_name=None
     if(group_id != None):
         friendly_name=state.getattr(group_id)["friendly_name"]
-    bridge = get_bridge()
-
-    group = None
-    match_count = 0
-    if(group_id != None):
-        for grp in bridge.groups.values():
-            if grp.name == friendly_name:
-                match_count = match_count + 1
-                group = grp
-    if group is None:
-        group = bridge.groups.get_all_lights_group()
-    if match_count > 1:
-        _LOGGER.warning("Found multiple matches with name: " + friendly_name + ", check bridge for e.g. zones with duplicate names")
-    scene = None
-    for scn in bridge.scenes.values():
-        if scn.id == scene_id:
-            scene = scn
-    if(scene == None):
-        _LOGGER.warning("No scene found with ID: %s",scene_id);
-        return;
-    transition = int(round(((transitionhours*60*60)+(transitionmins*60)+(transitionsecs)+(transitionms/1000))*10,0))
-    if not no_logging:
-        _LOGGER.debug("Triggering scene. Group: " + group.name + ", Scene: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=round(transition/10,1))) + " (submitted as: " + str(transition) + ")")
-    group.set_action(scene=scene.id,transitiontime=transition)
+    async with get_bridge() as bridge:
+        group = None
+        match_count = 0
+        if(group_id != None):
+            for grp in bridge.groups.values():
+                if grp.name == friendly_name:
+                    match_count = match_count + 1
+                    group = grp
+        if group is None:
+            group = bridge.groups.get_all_lights_group()
+        if match_count > 1:
+            _LOGGER.warning("Found multiple matches with name: " + friendly_name + ", check bridge for e.g. zones with duplicate names")
+        scene = None
+        for scn in bridge.scenes.values():
+            if scn.id == scene_id:
+                scene = scn
+        if(scene == None):
+            _LOGGER.warning("No scene found with ID: %s",scene_id);
+            return;
+        transition = int(round(((transitionhours*60*60)+(transitionmins*60)+(transitionsecs)+(transitionms/1000))*10,0))
+        if not no_logging:
+            _LOGGER.debug("Triggering scene. Group: " + group.name + ", Scene: " + scene.name + ", Transition time: " + str(datetime.timedelta(seconds=round(transition/10,1))) + " (submitted as: " + str(transition) + ")")
+        group.set_action(scene=scene.id,transitiontime=transition)
 
 @service
 def toggle_room(room_entity):
@@ -246,17 +245,14 @@ fields:
                 state.set(scene_entity,value = "on")
 
 async def get_bridge():
-    bridge = aiohue.Bridge(
+    bridge = aiohue.HueBridgeV1(
         pyscript.config["hue_ip"],
-        username=pyscript.config["hue_user"],
-        websession=aiohttp_client.async_get_clientsession(hass),
+        app_key=pyscript.config["hue_user"],
     )
     """Create a bridge object and verify authentication."""
     # Initialize bridge (and validate our username)
     try:
         with async_timeout.timeout(10):
-            if not bridge.username:
-                _LOGGER.error("Username not set in bridge")
             await bridge.initialize()
     except (aiohue.LinkButtonNotPressed, aiohue.Unauthorized) as err:
         raise AuthenticationRequired from err
