@@ -266,7 +266,7 @@ def gramatus_test2(entity_id):
         log.debug("DONE")
 
 @service
-def ensure_shuffled_playlist(playlistid):
+def ensure_shuffled_playlist(playlistid, consider_play_date=True):
     """yaml
 name: Ensure shuffled playlist
 description: Creates or uppdates a "shadow" playlist that is shuffled according to my own custom algorithm
@@ -277,9 +277,15 @@ fields:
         example: 2pjB7wGkkoG9VYY8enMR5b
         selector:
             text:
+    consider_play_date:
+        description: Should recently played tracks be played later?
+        required: false
+        example: true
+        selector:
+            boolean:
 """
     input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + playlistid)
-    shuffle_playlist_id = spotify_services.ensure_shuffled_playlist(playlistid)
+    shuffle_playlist_id = spotify_services.ensure_shuffled_playlist(playlistid, consider_play_date)
     input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
     return shuffle_playlist_id
 

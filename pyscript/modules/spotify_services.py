@@ -224,37 +224,75 @@ def skip_track():
     media_player.media_next_track(entity_id="media_player.spotify_gramatus")
     return True
 
-def update_shuffle_playlist(playlistid, shuffleplaylistid):
+def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResult=False):
+    max_passes = 10
+    previous_track = None
+    log.info("Track list to fix has a length of: " + str(len(sorted_tracks)))
+    for i in range(max_passes):
+        # _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
+        updated_list = []
+        order_updated = False
+        track_num = 0
+        for track in sorted_tracks:
+            track_num = track_num + 1
+            if previous_track != None:
+                # if logResult and track["album"]=="Cocktail Bar Jazz":
+                #     _LOGGER.info("#" + str(track_num) + ": Found! Cocktail Bar Jazz" + " for track (" + track["name"] + ")")
+                # else:
+                #     _LOGGER.info("#" + str(track_num) + ": Album was: " + track["album"] + " for track (" + track["name"] + ")")
+                if previous_track["artist"] == track["artist"] or previous_track["album"] == track["album"]:
+                    # if previous_track["artist"] == track["artist"]:
+                    #     _LOGGER.info("Found two by each other for: " + track["artist"])
+                    # if previous_track["album"] == track["album"]:
+                    #     _LOGGER.info("Found two by each other for: " + track["album"])
+                    seconds_from_min_to_this = int((track["last_played"] - lowest_last_played_datetime).total_seconds())
+                    move_secs = 0
+                    if seconds_from_min_to_this <= 0:
+                        seconds_from_min_to_this = int(track["last_played"].timestamp()) # Handles tracks that has not been played before
+                    # _LOGGER.debug("seconds_from_min_to_this:" + str(seconds_from_min_to_this))
+                    if seconds_from_min_to_this > 0:
+                        move_secs = (seconds_from_min_to_this * 0.2) - (random.randrange(0, seconds_from_min_to_this))
+                    if logResult:
+                        _LOGGER.info("#" + str(track_num) + ": Seconds to move " + track["name"] + " (" + track["artist"] + " / " + track["album"] + "): " + str(move_secs) + ", original timestamp: " + str(track["last_played"].timestamp()))
+                    track["last_played"] = track["last_played"] + datetime.timedelta(seconds=move_secs)
+                    order_updated = True
+                # else:
+                #     if logResult and track["album"]=="Cocktail Bar Jazz":
+                #         _LOGGER.debug("#" + str(track_num) + ": These are different: \"" + previous_track["album"] + "\" / \"" + track["album"] + "\"")
+            previous_track = track
+            updated_list.append(track)
+        sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
+        if i == max_passes - 1:
+            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
+        if order_updated == False:
+            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
+            break
+    return sorted_tracks
+
+def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=True):
     # Get stored data on last played time for tracks
-    base_data = database_services.run_select_query("[uri], [name], MAX([played]) as [played]", "played_tracks_list", "GROUP BY [uri], [name]")
-    data = {}
+    base_data = database_services.run_select_query("[uri], [name], [album], [artist], MAX([played]) as [played]", "played_tracks_list", "GROUP BY [uri], [name], [album], [artist]")
+    # _LOGGER.info(len(base_data))
+    played_tracks_uri = {}
+    played_tracks_identifier = {}
+    played_tracks_name = {}
     for track in base_data:
-        data[track["uri"]] = track
-        data[track["uri"]]["last_played"] = track["played"]
-    cached_tracks = database_services.run_select_query("*", "playlist_cached_tracks", "WHERE [playlistid] = '{}'".format(playlistid))
+        played_tracks_uri[track["uri"]] = track
+        played_tracks_uri[track["uri"]]["last_played"] = track["played"]
+        track_identifier = track["name"] + "|" + track["album"] + "|" + track["artist"]
+        played_tracks_identifier[track_identifier] = track
+        played_tracks_identifier[track_identifier]["last_played"] = track["played"]
+        played_tracks_name[track["name"]] = track
+        played_tracks_name[track["name"]]["last_played"] = track["played"]
     use_cache = False
-    if not use_cache:
-        cached_tracks = None
-    if cached_tracks != None:
-        sorted_tracks = cached_tracks
+    if use_cache:
+        sorted_tracks = database_services.run_select_query("*", "playlist_cached_tracks", "WHERE [playlistid] = '{}'".format(playlistid))
         _LOGGER.info("Read sorted tracks from cached data")
     else:
-        db_items = database_services.run_select_query("[uri], [data]", "playlist_state", "WHERE [playlistid] = '{}'".format(playlistid))
-        cached_items = []
-        for item in db_items:
-            cached_items.append(json.loads(item["data"]))
-        if not use_cache:
-            cached_items = None
-        if cached_items != None:
-            _LOGGER.info("Read tracks from cached data")
-            items = cached_items
-        else:
-            # Get all tracks in playlist
-            _LOGGER.debug("Reading tracks from source playlist")
-            # Note: we are using market here as the data in recently_played is using the uri based on market
-            items = spotify_get("/playlists/" + playlistid + "/tracks?market=NO&limit=100", False)
-            # _LOGGER.debug("Writing updated data on playlist to DB table [playlist_state]")
-            # database_services.reset_playlist_state(items, playlistid)
+        # Get all tracks in playlist
+        _LOGGER.debug("Reading tracks from source playlist")
+        # Note: we are using market here as the data in recently_played is using the uri based on market
+        items = spotify_get("/playlists/" + playlistid + "/tracks?market=NO&limit=100", False)
 
         # Combine the data into an object that will be used to create the shuffled playlist
         tracks = []
@@ -265,57 +303,42 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
                 "uri":  track["uri"],
                 "market_uri":  track["uri"],
                 "artist": track["artists"][0]["name"],
-                "album": track["album"]["name"]
+                "album": track["album"]["name"],
+                "track_identifier": track["name"] + "|" + track["album"]["name"] + "|" + track["artists"][0]["name"]
             }
             if "linked_from" in track:
                 trackdata["uri"] = track["linked_from"]["uri"]
-            if trackdata["market_uri"] in data:
-                trackdata["last_played"] = data[trackdata["market_uri"]]["last_played"]
+            if trackdata["market_uri"] in played_tracks_uri:
+                trackdata["last_played"] = played_tracks_uri[trackdata["market_uri"]]["last_played"]
+            elif trackdata["track_identifier"] in played_tracks_identifier:
+                _LOGGER.warning("Track has wrong uri in DB: " + trackdata["uri"]+" / " + trackdata["track_identifier"])
+                trackdata["last_played"] = played_tracks_identifier[trackdata["track_identifier"]]["last_played"]
             else:
+                if trackdata["name"] in played_tracks_name:
+                    _LOGGER.warning("No match in DB, but DB has track with same name: " + trackdata["uri"]+" / " + trackdata["name"])
+                    _LOGGER.info(played_tracks_name[track["name"]])
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
             if trackdata["last_played"].timestamp() < 25*365*24*60*60:
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
             tracks.append(trackdata)
         # Sort tracks by last played
         sorted_tracks = sorted(tracks, key=lambda i:i["last_played"], reverse=False)
-        # _LOGGER.debug("Writing updated playlist_cached_tracks data to DB")
-        # database_services.reset_playlist_cached_tracks(sorted_tracks, playlistid)
 
+    # For tracks that haven't been played before, add a last_played value so things gets a bit more sorted. Before doing that, do a simple shuffle on the list to add some seed into "added order" stuff
+    random.shuffle(sorted_tracks)
     day_offset = 1
+    one_year_ago = datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp() - 365*24*60*60)
     for track in sorted_tracks:
-        if track["last_played"].timestamp() == 0:
-            track["last_played"] = track["last_played"] + datetime.timedelta(days=day_offset)
+        if track["last_played"].timestamp() == 0 or not consider_play_date:
+            track["last_played"] = one_year_ago - datetime.timedelta(days=day_offset)
+            # _LOGGER.debug("Last played set to: " + str(track["last_played"]))
             day_offset = day_offset + 1
 
-    max_passes = 10
-    previous_track = None
-    lowest_last_played_date = min(sorted_tracks, key=lambda x: x["last_played"])["last_played"]
-    for i in range(max_passes):
-        # _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
-        updated_list = []
-        order_updated = False
-        for track in sorted_tracks:
-            if previous_track != None:
-                if previous_track["artist"] == track["artist"] or previous_track["album"] == track["album"]:
-                    # if previous_track["artist"] == track["artist"]:
-                    #     _LOGGER.info("Found two by each other for: " + track["artist"])
-                    # if previous_track["album"] == track["album"]:
-                    #     _LOGGER.info("Found two by each other for: " + track["album"])
-                    seconds_from_min_to_this = int((track["last_played"] - lowest_last_played_date).total_seconds())
-                    move_secs = 0
-                    if seconds_from_min_to_this > 0:
-                        move_secs = (random.randrange(seconds_from_min_to_this) * -1) + (seconds_from_min_to_this * 0.2)
-                    # _LOGGER.info("Seconds to move " + track["name"] + ": " + str(move_secs))
-                    track["last_played"] = track["last_played"] + datetime.timedelta(seconds=move_secs)
-                    order_updated = True
-            previous_track = track
-            updated_list.append(track)
-        sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
-        if i == max_passes - 1:
-            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
-        if order_updated == False:
-            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
-            break
+    tracks_played_last_year = filter(lambda x: x["last_played"].timestamp() >= datetime.datetime.now().timestamp() - 365*24*60*60, sorted_tracks)
+    if not consider_play_date:
+        tracks_played_last_year = sorted_tracks
+    lowest_last_played_datetime = min(tracks_played_last_year, key=lambda x: x["last_played"])["last_played"]
+    sorted_tracks = fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, True)
 
     sorted_tracks = sorted(sorted_tracks, key=lambda i:i["last_played"], reverse=False)
     report_sort_data = False
@@ -338,17 +361,17 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     #     })
     #     state.setattr("pyscript.playlist_sort_test." + playlistid, result_list)
     # Split into lists, based on the most recently played and the least recently played
-    group_size = 40
-    if len(sorted_tracks) > 300:
-        group_size = 50
+    group_size = 50
+    if len(sorted_tracks) > 200:
+        group_size = 100
     if len(sorted_tracks) > 500:
-        group_size = 75
-    min_group_count = 6
-    min_group_size = 25
+        group_size = 150
+    min_group_count = 3
+    min_group_size = 50
     if len(sorted_tracks) < 100:
-        min_group_count = 3
-    if len(sorted_tracks) < 50:
         min_group_count = 2
+    if len(sorted_tracks) < 50:
+        min_group_count = 1
     group_count = int(len(sorted_tracks)/group_size)
     if group_count < min_group_count:
         _LOGGER.debug("Too few groups, increasing group count to: " + str(min_group_count))
@@ -376,6 +399,15 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
         groups.append(group)
     _LOGGER.info(str(len(sorted_tracks)) + " tracks has been shuffled in " + str(group_count) + " groups of " + str(group_size) + ", Total number of tracks shuffled: " + str(group_count_total))
 
+    shuffled_tracks = []
+    for group in groups:
+        for track in group:
+            shuffled_tracks.append(track)
+    fix_after_shuffle = True
+    if fix_after_shuffle:
+        shuffled_tracks = fix_repeat_artist_album(shuffled_tracks, lowest_last_played_datetime, True)
+        _LOGGER.info("Updated after shuffling to avoid groupings of same artist/album")
+
     _LOGGER.debug("Removing all items from shadow playlist")
     truncate_playlist(shuffleplaylistid)
     _LOGGER.debug("Adding items to shadow playlist")
@@ -384,16 +416,15 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     uris = []
     batch_size = 50
     _LOGGER.debug(" > Adding shuffled tracks to shadow playlist in batches of " + str(batch_size))
-    for group in groups:
-        for track in group:
-            # _LOGGER.info(track["name"])
-            count = count + 1
-            uris.append(track["uri"])
-            if len(uris) >= batch_size:
-                _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
-                spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris})
-                uris = []
-    # Handle the last group
+    for track in shuffled_tracks:
+        # _LOGGER.info(track["name"])
+        count = count + 1
+        uris.append(track["uri"])
+        if len(uris) >= batch_size:
+            _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
+            spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris})
+            uris = []
+    # Handle the last batch
     if len(uris) > 0:
         _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
         spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris})
@@ -466,8 +497,8 @@ def ensure_shuffle_playlist_exists(playlistid):
     })
     return shuffle_playlist["id"], False
 
-def ensure_shuffled_playlist(playlistid):
+def ensure_shuffled_playlist(playlistid, consider_play_date=True):
     update_recently_played()
     shuffle_playlist_id, playlist_exists = ensure_shuffle_playlist_exists(playlistid)
-    update_shuffle_playlist(playlistid, shuffle_playlist_id)
+    update_shuffle_playlist(playlistid, shuffle_playlist_id, consider_play_date)
     return shuffle_playlist_id
