@@ -87,6 +87,7 @@ logger:
     hue_tools: debug
     fully_actions: debug
     spotify_play: info
+    spotify_services: info
     # custom_components.pyscript.scripts.hue_trans_tools: debug
     # hue_trans_tools: debug
     # Disable info logging from automations running all the time (that usually also has custom logging from my scripts if needed)
