@@ -404,15 +404,9 @@
   action:
   - service: pyscript.turn_on_ikea_lights_when_room_turned_on
     data:
-      trigger: '{{ trigger }}
-
-        '
-      entity_id: '{{ trigger.entity_id }}
-
-        '
-      area_id: '{{ area_id(trigger.entity_id) }}
-
-        '
+      trigger: '{{ trigger }}'
+      entity_id: '{{ trigger.entity_id }}'
+      area_id: '{{ area_id(trigger.entity_id) }}'
       disabled: true
   - delay:
       hours: 0
@@ -421,9 +415,7 @@
       milliseconds: 0
   - service: pyscript.run_trans_for_turned_on_room
     data:
-      trigger: '{{ trigger }}
-
-        '
+      trigger: '{{ trigger }}'
   mode: parallel
   max: 10
 - id: '1633873412716'
@@ -490,9 +482,7 @@
   action:
   - service: pyscript.hue_event_trigger
     data:
-      trigger: '{{ trigger }}
-
-        '
+      trigger: '{{ trigger }}'
   mode: single
 - id: '1634471901458'
   alias: 'Lysfade: Fange opp at lyset blir skrudd av'
