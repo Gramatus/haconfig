@@ -63,8 +63,8 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
         while has_more_data:
             encoded_url = URL(full_url,encoded=True)
             async with session.get(encoded_url, allow_redirects=False, headers=headers) as response:
-                if response.status != 200:
-                    _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + "Response from server:\n" + response.text())
+                if response.status // 100 != 2:
+                    _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                     return
                 resp_json = response.json()
                 # Used for debugging only
@@ -78,7 +78,7 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                         cursor_text = ", This page starts at: " + datetime.datetime.utcfromtimestamp(int(resp_json["cursors"]["after"])/1000).strftime("%Y-%m-%d %H:%M:%S")
                     elif "before" in resp_json["cursors"]:
                         cursor_text = ", This page ends at: " + datetime.datetime.utcfromtimestamp(int(resp_json["cursors"]["before"])/1000).strftime("%Y-%m-%d %H:%M:%S")
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + cursor_text)
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status) + cursor_text)
                 if ReturnRaw:
                     return resp_json
                 elif "items" in resp_json:
@@ -139,12 +139,15 @@ async def spotify_post(relative_url, json_data, return_response=False):
     async with aiohttp.ClientSession() as session:
         encoded_url = URL(full_url,encoded=True)
         async with session.post(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            if response.status // 100 != 2:
+                _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                return
             resp_text = response.text()
             if len(resp_text) < 200:
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
             else:
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status))
-                _LOGGER.info("Response: " + resp_text)
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status))
+                _LOGGER.debug("Response: " + resp_text)
             if return_response:
                 return response.json()
 
@@ -159,12 +162,15 @@ async def spotify_put(relative_url, json_data=None, return_response=False):
     async with aiohttp.ClientSession() as session:
         encoded_url = URL(full_url,encoded=True)
         async with session.put(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            if response.status // 100 != 2:
+                _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                return
             resp_text = response.text()
             if len(resp_text) < 200:
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
             else:
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status))
-                _LOGGER.info("Response: " + resp_text)
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status))
+                _LOGGER.debug("Response: " + resp_text)
             if return_response:
                 return response.json()
 
@@ -179,17 +185,20 @@ async def spotify_delete(relative_url, json_data):
     async with aiohttp.ClientSession() as session:
         encoded_url = URL(full_url,encoded=True)
         async with session.delete(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            if response.status // 100 != 2:
+                _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                return
             resp_text = response.text()
             if len(resp_text) < 200:
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response: " + resp_text.replace("\n","").replace("\r",""))
             else:
-                _LOGGER.info(" > " + str(encoded_url) + ": Status "+str(response.status))
-                _LOGGER.info("Response: " + resp_text)
+                _LOGGER.debug(" > " + str(encoded_url) + ": Status "+str(response.status))
+                _LOGGER.debug("Response: " + resp_text)
 
 def update_recently_played():
     # Figure out the most recent info I have
     last_saved_info = database_services.run_select_query("MAX(played) AS played", "played_tracks_list", "WHERE [play_lenght_ms] = [duration_ms]")[0]["played"]
-    _LOGGER.info("Getting updated data on recently played tracks. Last data saved on recently played is from: " + str(last_saved_info))
+    _LOGGER.debug("Getting updated data on recently played tracks. Last data saved on recently played is from: " + str(last_saved_info))
     unix_timestamp = int(last_saved_info.replace(tzinfo=datetime.timezone.utc).timestamp()*1000)
     # Get all data on "recently played" after this point in time
     items = spotify_get("/me/player/recently-played?limit=50&after="+str(unix_timestamp), False)
@@ -200,7 +209,7 @@ def update_recently_played():
             filtered_items.append(item)
     if len(filtered_items) > 0:
         database_services.add_played_tracks_list(filtered_items)
-    _LOGGER.info("Finished updating recently played tracks")
+    _LOGGER.debug("Finished updating recently played tracks")
 
 def skip_track():
     spotify_playing = state.get("media_player.spotify_gramatus") == "playing"
@@ -211,7 +220,7 @@ def skip_track():
     data["track"] = data["item"]
     data["played_at"] = datetime.datetime.utcnow();
     database_services.add_skipped_track(data)
-    _LOGGER.info("Skipping to next track on media_player.spotify_gramatus")
+    _LOGGER.debug("Skipping to next track on media_player.spotify_gramatus")
     media_player.media_next_track(entity_id="media_player.spotify_gramatus")
     return True
 
@@ -241,11 +250,11 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             items = cached_items
         else:
             # Get all tracks in playlist
-            _LOGGER.info("Reading tracks from source playlist")
+            _LOGGER.debug("Reading tracks from source playlist")
             # Note: we are using market here as the data in recently_played is using the uri based on market
             items = spotify_get("/playlists/" + playlistid + "/tracks?market=NO&limit=100", False)
-            _LOGGER.info("Writing updated data on playlist to DB table [playlist_state]")
-            database_services.reset_playlist_state(items, playlistid)
+            # _LOGGER.debug("Writing updated data on playlist to DB table [playlist_state]")
+            # database_services.reset_playlist_state(items, playlistid)
 
         # Combine the data into an object that will be used to create the shuffled playlist
         tracks = []
@@ -269,8 +278,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             tracks.append(trackdata)
         # Sort tracks by last played
         sorted_tracks = sorted(tracks, key=lambda i:i["last_played"], reverse=False)
-        _LOGGER.info("Writing updated playlist_cached_tracks data to DB")
-        database_services.reset_playlist_cached_tracks(sorted_tracks, playlistid)
+        # _LOGGER.debug("Writing updated playlist_cached_tracks data to DB")
+        # database_services.reset_playlist_cached_tracks(sorted_tracks, playlistid)
 
     day_offset = 1
     for track in sorted_tracks:
@@ -303,9 +312,9 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
             updated_list.append(track)
         sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
         if i == max_passes - 1:
-            _LOGGER.info("Final number of passes to avoid groupings: " + str(i + 1))
+            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
         if order_updated == False:
-            _LOGGER.info("Final number of passes to avoid groupings: " + str(i + 1))
+            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
             break
 
     sorted_tracks = sorted(sorted_tracks, key=lambda i:i["last_played"], reverse=False)
@@ -342,11 +351,11 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
         min_group_count = 2
     group_count = int(len(sorted_tracks)/group_size)
     if group_count < min_group_count:
-        _LOGGER.info("Too few groups, increasing group count to: " + str(min_group_count))
+        _LOGGER.debug("Too few groups, increasing group count to: " + str(min_group_count))
         group_count = min_group_count
     if len(sorted_tracks)/group_count < min_group_size:
         group_count = int(len(sorted_tracks)/min_group_size)
-        _LOGGER.info("Too small groups, reduced group count to: " + str(group_count))
+        _LOGGER.debug("Too small groups, reduced group count to: " + str(group_count))
     groups = []
     final_track_list = []
     group_count_total = 0
@@ -367,14 +376,14 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
         groups.append(group)
     _LOGGER.info(str(len(sorted_tracks)) + " tracks has been shuffled in " + str(group_count) + " groups of " + str(group_size) + ", Total number of tracks shuffled: " + str(group_count_total))
 
-    _LOGGER.info("Removing all items from shadow playlist")
+    _LOGGER.debug("Removing all items from shadow playlist")
     truncate_playlist(shuffleplaylistid)
-    _LOGGER.info("Adding items to shadow playlist")
+    _LOGGER.debug("Adding items to shadow playlist")
     count = 0
     # Add all the tracks to the shuffled playlist
     uris = []
     batch_size = 50
-    _LOGGER.info(" > Adding shuffled tracks to shadow playlist in batches of " + str(batch_size))
+    _LOGGER.debug(" > Adding shuffled tracks to shadow playlist in batches of " + str(batch_size))
     for group in groups:
         for track in group:
             # _LOGGER.info(track["name"])
@@ -388,7 +397,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid):
     if len(uris) > 0:
         _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
         spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris})
-    _LOGGER.info("DONE! Shadow playlist has been updated")
+    _LOGGER.debug("DONE! Shadow playlist has been updated")
 
 def truncate_playlist(playlistid):
     playlist = spotify_get("/playlists/" + playlistid, False)
@@ -399,14 +408,14 @@ def truncate_playlist(playlistid):
         _LOGGER.info("Playlist we are about to delete everything from is not marked as a shuffled playlist, will not do anything")
         _LOGGER.info("Playlist name: " + playlist["name"])
         return
-    _LOGGER.info(" > All safeguards reports ok, will proceed to empty the playlist.")
+    _LOGGER.debug(" > All safeguards reports ok, will proceed to empty the playlist.")
     # Get all tracks in playlist
-    _LOGGER.info(" > Getting all tracks (so we can tell Spotify to delete them)")
+    _LOGGER.debug(" > Getting all tracks (so we can tell Spotify to delete them)")
     # Note: we are NOT using market here as we want the actual URI stored in the playlist
     items = spotify_get("/playlists/" + playlistid + "/tracks?limit=100", False)
     uris = []
     batch_size = 50
-    _LOGGER.info(" > Deleting all tracks in batches of " + str(batch_size))
+    _LOGGER.debug(" > Deleting all tracks in batches of " + str(batch_size))
     for item in items:
         track = item["track"]
         uris.append({ "uri": track["uri"] })
@@ -424,9 +433,9 @@ def ensure_shuffle_playlist_exists(playlistid):
     known_playlists = state.getattr("pyscript.spotify_shuffle_playlists")
     playlisturi = "spotify:playlist:" + playlistid
     if playlisturi in known_playlists:
-        _LOGGER.info(" > Shuffle playlist is known with ID: \"" + known_playlists[playlisturi]["shuffle_playlist_id"] + "\"")
+        _LOGGER.debug(" > Shuffle playlist is known with ID: \"" + known_playlists[playlisturi]["shuffle_playlist_id"] + "\"")
         return known_playlists[playlisturi]["shuffle_playlist_id"], True
-    _LOGGER.info(" > Shuffle playlist id is not saved, trying to find it by searching Spotify")
+    _LOGGER.debug(" > Shuffle playlist id is not saved, trying to find it by searching Spotify")
     playlist = spotify_get("/playlists/" + playlistid, False)
     playlistname = playlist["name"]
     playlisturi = playlist["uri"]
@@ -438,7 +447,7 @@ def ensure_shuffle_playlist_exists(playlistid):
             if playlist["owner"]["id"] == spotify_username:
                 shuffle_playlist = playlist
     if shuffle_playlist != None:
-        _LOGGER.info(" > Shuffle playlist already exists with ID: \"" + shuffle_playlist["id"] + "\"")
+        _LOGGER.debug(" > Shuffle playlist already exists with ID: \"" + shuffle_playlist["id"] + "\"")
         state.setattr("pyscript.spotify_shuffle_playlists." + playlisturi, {
             "name": playlistname,
             "shuffle_playlist_id": shuffle_playlist["id"]

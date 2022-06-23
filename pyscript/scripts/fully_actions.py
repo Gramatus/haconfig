@@ -80,7 +80,7 @@ fields:
     fully_set_alarm(time=wakeuptime.strftime("%H:%M:%S"),playlistID="",device=device)
 
 @service
-def fully_set_alarm(time,device,playlistID=None,screenBrightness=None,showAlarmTime=30,turnOffAfter=True):
+async def fully_set_alarm(time,device,playlistID=None,screenBrightness=None,showAlarmTime=30,turnOffAfter=True):
     """yaml
 name: Set alarm
 fields:

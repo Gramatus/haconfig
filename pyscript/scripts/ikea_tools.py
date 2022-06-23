@@ -31,7 +31,7 @@ fields:
     if disabled:
         return
     if area_id != None:
-        log.info("Turning on all lights in AREA \"" + area_id + "\"")
+        log.debug("Turning on all lights in AREA \"" + area_id + "\"")
         light.turn_on(area_id=area_id)
     else:
         log.info("TODO - or not something I will not handle?")
@@ -55,7 +55,7 @@ fields:
     if disabled:
         return
     if area_id != None:
-        log.info("Turning off all lights in AREA \"" + area_id + "\"")
+        log.debug("Turning off all lights in AREA \"" + area_id + "\"")
         light.turn_off(area_id=area_id)
     else:
         log.info("TODO - or not something I will not handle?")
@@ -109,14 +109,14 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
         lights_on = True
         trans_active = True
     if not lights_on:
-        log.info("  > " + room + ": Lights are not on, will not do anything.")
+        log.debug("  > " + room + ": Lights are not on, will not do anything.")
         return
     elif not trans_active:
-        log.info("  > " + room + ": Transitions are disabled, will not do anything.")
+        log.debug("  > " + room + ": Transitions are disabled, will not do anything.")
         return
     elif not fading:
         # We expect some other code to set the correct state for the rooms fadeend entity before this code runs
-        log.info("  > " + room + ": Fade is not running, will not do anything")
+        log.debug("  > " + room + ": Fade is not running, will not do anything")
         return
     for data in dataset:
         if data["room"] != room:
@@ -160,7 +160,7 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
         for light_entity in data["lights"]:
             light_on = state.get(light_entity) == "on"
             if not light_on and not force_run:
-                log.info("    # " + light_entity + ": Light is not on, will not do anything.")
+                log.debug("    # " + light_entity + ": Light is not on, will not do anything.")
                 continue
             light_attr = state.getattr(light_entity)
             current_bri = 0
@@ -196,21 +196,21 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
             # Another note-to-self: It seems that changing brightness AND color at the same time does not go down well at all. So I probably need to do a part A, part B exchange back and forth
             change_color = current_step % 2 == 0 # We change the color on even steps
             if change_color and new_hs != None:
-                log.info("    # " + light_entity + ": fading to new color " + str(new_hs))
+                log.debug("    # " + light_entity + ": fading to new color " + str(new_hs))
                 light.turn_on(entity_id=light_entity, hs_color=new_hs, transition=fade_time)
             elif change_color and new_kelvin != None:
-                log.info("    # " + light_entity + ": fading to new color temperature " + str(new_kelvin) + "K")
+                log.debug("    # " + light_entity + ": fading to new color temperature " + str(new_kelvin) + "K")
                 light.turn_on(entity_id=light_entity, kelvin=new_kelvin, transition=fade_time)
             else:
-                log.info("    # " + light_entity + ": fading to brightness " + str(new_bri))
+                log.debug("    # " + light_entity + ": fading to brightness " + str(new_bri))
                 light.turn_on(entity_id=light_entity, brightness=new_bri, transition=fade_time)
         if elapsed_time + fade_time < full_fade_time:
             wait_time = fade_time + 1 # Let there be a slight delay before the next run
-            log.info("  > " + room + ": Waiting " + str(wait_time) + " seconds before starting next step: #" + str(current_step + 1))
+            log.debug("  > " + room + ": Waiting " + str(wait_time) + " seconds before starting next step: #" + str(current_step + 1))
             task.sleep(wait_time)
             pyscript.trigger_for_room_if_active_ikea(dataset=dataset, room=room, elapsed_time=elapsed_time + wait_time, current_step=current_step + 1, override_time=override_time, index=index)
         else:
-            log.info("  > " + room + ":" + "Fade completed at step #" + str(current_step))
+            log.info("  > " + room + ": Fade completed at step #" + str(current_step))
 
 @service
 def ikea_test():
@@ -409,7 +409,7 @@ def color_temperature_mired_to_kelvin(mired_temperature: int) -> float:
     """Convert mired shift to degrees kelvin."""
     return math.floor(1000000 / mired_temperature)
 
-def hue_hs_to_huesat(HueColor: int, HueSaturation: Int) -> list[int]:
+def hue_hs_to_huesat(HueColor: int, HueSaturation: Int) -> "list[int]":
     hue = (HueColor / 65535) * 360
     if hue > 360:
         hue = 360
@@ -418,7 +418,7 @@ def hue_hs_to_huesat(HueColor: int, HueSaturation: Int) -> list[int]:
         sat = 100
     return [hue, sat]
 
-def huesat_to_huehs(huesat: list[int]) -> tuple[int, int]:
+def huesat_to_huehs(huesat: "list[int]") -> "tuple[int, int]":
     HueColor = int((huesat[0] / 360) * 65535)
     HueSaturation = int((huesat[1] / 100) * 255)
     return HueColor, HueSaturation

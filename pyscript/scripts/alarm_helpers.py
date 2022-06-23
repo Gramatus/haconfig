@@ -3,8 +3,6 @@ import asyncio
 import datetime
 import spotify_services
 
-_LOGGER = logging.getLogger(__name__)
-
 playlist_mapping = {
     "Våkneliste": "3FVKcokzHla6424Cj74LzL",
     "Lovsang": "0dUdJSf4v753IJwv8xDThH",
@@ -62,36 +60,36 @@ fields:
         attributes = state.getattr(device)
         if "volume_level" in attributes:
             initial_volume = round(attributes["volume_level"], 2)
-            _LOGGER.info("No initial volume supplied, will use current volume: " + str(initial_volume))
+            log.info("No initial volume supplied, will use current volume: " + str(initial_volume))
         else:
             initial_volume = 0.0
-            _LOGGER.warning("No initial volume supplied, no current volume found, will use 0.0. Attributes found:")
-            _LOGGER.info(attributes)
+            log.warning("No initial volume supplied, no current volume found, will use 0.0. Attributes found:")
+            log.info(attributes)
     volume_level = initial_volume
     volume_increase = final_volume - initial_volume
     fadein_steps = abs(int(100 * volume_increase))
     wait_seconds = 0
     if fadein_steps == 0:
-        _LOGGER.info("Volume change from " + str(initial_volume) + " to " + str(final_volume) + " will happen in 0 steps, i.e. no change will occur")
+        log.info("Volume change from " + str(initial_volume) + " to " + str(final_volume) + " will happen in 0 steps, i.e. no change will occur")
     else:
         wait_seconds = fadein_seconds / fadein_steps
     increase = final_volume > initial_volume
     increase_step = 0
     if not fadein_steps == 0:
-        _LOGGER.info("Will change volume from " + str(initial_volume) + " to " + str(final_volume) + " in "+str(fadein_seconds)+" seconds. Time for each step: " + str(round(wait_seconds, 2)))
+        log.info("Will change volume from " + str(initial_volume) + " to " + str(final_volume) + " in "+str(fadein_seconds)+" seconds. Time for each step: " + str(round(wait_seconds, 2)))
         increase_step = volume_increase / fadein_steps
     media_player.volume_set(entity_id=device, volume_level=volume_level)
     for x in range(fadein_steps):
         volume_level=round(volume_level+increase_step, 2)
         if increase and volume_level > final_volume:
             volume_level=final_volume
-            _LOGGER.info("Reached max volume")
+            log.info("Reached max volume")
         elif not increase and volume_level < final_volume:
             volume_level=final_volume
-            _LOGGER.info("Reached min volume")
+            log.info("Reached min volume")
         media_player.volume_set(entity_id=device, volume_level=volume_level)
         await asyncio.sleep(wait_seconds)
-    _LOGGER.info("Done, final volume is: " + str(volume_level))
+    log.info("Done, final volume is: " + str(volume_level))
 
 @service
 async def good_night():
@@ -99,36 +97,36 @@ async def good_night():
 name: Good night routine
 description: Set HVAC night settings, lower blinds and turn off lights after one minute
 """
-    _LOGGER.info("Turning on Fully screen and bringing Fully to the foreground")
+    log.info("Turning on Fully screen and bringing Fully to the foreground")
     wakeup_fully()
-    _LOGGER.info("Turning down covers")
+    log.info("Turning down covers")
     cover.close_cover(entity_id="cover.tradfri_blind")
-    _LOGGER.info("Wait 16 seconds for cover to close")
+    log.info("Wait 16 seconds for cover to close")
     await asyncio.sleep(16)
-    _LOGGER.info("Turning on lights temporarily, with a 10 second transition")
+    log.info("Turning on lights temporarily, with a 10 second transition")
     light.turn_on(entity_id="light.soverom",transition=10,kelvin=2000,brightness=30)
-    _LOGGER.info("Setting HVAC settings")
+    log.info("Setting HVAC settings")
     melcloud.set_vane_vertical(entity_id="climate.soverom",position="auto")
     climate.set_temperature(entity_id="climate.soverom",temperature=17.5)
     turnoff_time = str(datetime.timedelta(seconds=int((datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())+5*60))
     turnon_time = str(datetime.timedelta(seconds=state.getattr("input_datetime.vekking")["timestamp"]-5*60))
-    _LOGGER.info("Telling Fully to turn off WiFi between " + turnoff_time + " and " + turnon_time)
+    log.info("Telling Fully to turn off WiFi between " + turnoff_time + " and " + turnon_time)
     pyscript.fully_set_wifi_off_between(timeoff=turnoff_time, timeon=turnon_time, device="fully.nettbrett1")
-    _LOGGER.info("Wait 120 seconds before turning starting to turn the lights off")
+    log.info("Wait 120 seconds before turning starting to turn the lights off")
     await asyncio.sleep(120)
-    _LOGGER.info("Turning off lights with a 60 second transition")
+    log.info("Turning off lights with a 60 second transition")
     light.turn_off(entity_id="light.soverom",transition=60)
-    _LOGGER.info("Turning off Fully screen")
+    log.info("Turning off Fully screen")
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
-    _LOGGER.info("Done")
+    log.info("Done")
 
 @service
 def test_wifi_off():
     turnoff_time = str(datetime.timedelta(seconds=int((datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())+5*60))
     turnon_time = str(datetime.timedelta(seconds=state.getattr("input_datetime.vekking")["timestamp"]-5*60))
     pyscript.fully_set_wifi_off_between(timeoff=turnoff_time, timeon=turnon_time, device="fully.nettbrett1")
-    _LOGGER.info(turnoff_time)
-    _LOGGER.info(turnon_time)
+    log.info(turnoff_time)
+    log.info(turnon_time)
 
 @service
 async def start_morning():
@@ -136,27 +134,27 @@ async def start_morning():
 name: Start morning routine
 description: Finish things in bedroom and prepare downstairs
 """
-    _LOGGER.info("Dismissing backup alarm")
+    log.info("Dismissing backup alarm")
     pyscript.fully_dismiss_alarm(device="fully.nettbrett1")
-    _LOGGER.info("Turning back on HVAC with daytime settings")
+    log.info("Turning back on HVAC with daytime settings")
     climate.turn_on(entity_id="climate.soverom")
     melcloud.set_vane_vertical(entity_id="climate.soverom",position="swing")
     climate.set_temperature(entity_id="climate.soverom",temperature=16)
-    _LOGGER.info("Turning off lights with a 120 second transition")
+    log.info("Turning off lights with a 120 second transition")
     light.turn_off(entity_id="light.soverom", transition=120)
-    _LOGGER.info("Changing wakeup active to off")
+    log.info("Changing wakeup active to off")
     input_boolean.turn_off(entity_id="input_boolean.vekking_pagar")
-    _LOGGER.info("Wait 30 seconds before turning off the sound")
+    log.info("Wait 30 seconds before turning off the sound")
     await asyncio.sleep(30)
-    _LOGGER.info("Turning off the sound")
+    log.info("Turning off the sound")
     remote.turn_off(entity_id="remote.harmony_hub_soverom")
-    _LOGGER.info("Setting volume to 90 %")
+    log.info("Setting volume to 90 %")
     volume_increase(30, "media_player.godehol", final_volume = 0.9)
-    _LOGGER.info("Turning off fully screen")
+    log.info("Turning off fully screen")
     pyscript.fully_to_foreground(device="fully.nettbrett1")
     await asyncio.sleep(5)
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
-    _LOGGER.info("Done")
+    log.info("Done")
 
 @service
 async def wakeup_fully():
@@ -173,14 +171,14 @@ async def wakeup_alarm(device="media_player.godehol"):
 name: Run wakeup alarm routine
 description: Sounding the alarm
 """
-    _LOGGER.info("Start: Wakeup routine")
+    log.info("Start: Wakeup routine")
     playlistID = state.get("input_text.vekking_spilleliste_id")
     pyscript.play_playlist_random(playlistid=playlistID, device=device, shuffle_type="No shuffle", fadein_seconds=60, final_volume=0.9, delay_seconds_start_spotcast=10)
-    _LOGGER.info("  > Waiting 5 seconds before turning on sound system")
+    log.info("  > Waiting 5 seconds before turning on sound system")
     await asyncio.sleep(10)
-    _LOGGER.info("Turning on sound system")
+    log.info("Turning on sound system")
     remote.turn_on(entity_id="remote.harmony_hub_soverom",activity="Listen to Music")
-    _LOGGER.info("Done: Wakeup routine")
+    log.info("Done: Wakeup routine")
 
 @service
 def ensure_alarm_active():
@@ -189,11 +187,11 @@ name: Ensure that the alarm actually started as expected
 """
     check_interval = 120
     need_to_check_alarm = True
-    _LOGGER.info("Started script to ensure that wakeup plays music as expected")
+    log.info("Started script to ensure that wakeup plays music as expected")
     while need_to_check_alarm:
         wakeup_active = state.get("input_boolean.vekking_pagar") == "on"
         if not wakeup_active:
-            _LOGGER.info("Wakeup is not active, will not do anything")
+            log.info("Wakeup is not active, will not do anything")
             need_to_check_alarm = False
             break
         asyncio.sleep(check_interval)
@@ -206,7 +204,7 @@ name: Ensure that the alarm actually started as expected
         cast_playback_active = state.get(target_device) == "playing"
         spotify_playback_active = state.get("media_player.spotify_gramatus") == "playing"
         if cast_playback_active and spotify_playback_active:
-            _LOGGER.info("Confirmed alarm is at expected state")
+            log.info("Confirmed alarm is at expected state")
             need_to_check_alarm = False
             break
         minutes_since_wakeup = round(time_since_wakeup/60, 1)
@@ -216,23 +214,23 @@ name: Ensure that the alarm actually started as expected
         cc_time_since_turnon = 5*60 # Until I actually have a plug to use...
         # If not ok after 15 minutes, and HA has been up for more than 60 minutes, try restaring HA
         if time_since_wakeup > 15*60 and ha_uptime_seconds > 60*60:
-            _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, restarting home assistant to see if that helps (HA uptime: " + str(datetime.timedelta(seconds=ha_uptime_seconds)) + ")")
+            log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, restarting home assistant to see if that helps (HA uptime: " + str(datetime.timedelta(seconds=ha_uptime_seconds)) + ")")
             homeassistant.restart()
         # If not ok after 10 minutes, and the smart plug powering the chromecastdevice has been on for more than 60 minutes, try turning that off and then on again
         elif time_since_wakeup > 10*60 and cc_time_since_turnon > 60*60:
-            _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to restart chromecast device (by turning power off/on)")
+            log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to restart chromecast device (by turning power off/on)")
             #light.turn_off(chromecast_power_plug)
             # await asyncio.sleep(15)
             #light.turn_on(chromecast_power_plug)
-            _LOGGER.info("Turning CC off/on not yet implemented - smart plug currently not acquired")
+            log.info("Turning CC off/on not yet implemented - smart plug currently not acquired")
         else:
             # Change target media player to bedroom if Godehol does not work after 5 minutes
             if time_since_wakeup > 5*60:
-                _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to connect to " + target_device + ", in case the trouble is in the cast group and the rerunning wakeup routine")
+                log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to connect to " + target_device + ", in case the trouble is in the cast group and the rerunning wakeup routine")
             else:
-                _LOGGER.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to rerun wakeup routine")
+                log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to rerun wakeup routine")
             pyscript.wakeup_alarm(device=target_device)
-    _LOGGER.info("Finished ensure alarm script")
+    log.info("Finished ensure alarm script")
 
 @service
 async def set_wakeup_playlist(playlist):
@@ -260,7 +258,7 @@ fields:
     input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
     input_text.set_value(entity_id="input_text.vekking_spilleliste_id", value=shuffleplaylistid)
     input_select.select_option(entity_id="input_select.vekking_valgt_spilleliste", option=playlist)
-    _LOGGER.info("Updated shuffle shadow playlist. Now setting selected playlist for wakeup to: \"" + playlist + "\" (original id: \"" + playlistid + "\", shuffle playlist id: \"" + shuffleplaylistid + "\")")
+    log.info("Updated shuffle shadow playlist. Now setting selected playlist for wakeup to: \"" + playlist + "\" (original id: \"" + playlistid + "\", shuffle playlist id: \"" + shuffleplaylistid + "\")")
 
 @service
 def set_wakeup_trans():

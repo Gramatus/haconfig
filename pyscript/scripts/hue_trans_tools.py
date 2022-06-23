@@ -14,7 +14,7 @@ import copy
 import asyncio
 import re
 
-log = logging.getLogger(__name__)
+# log = logging.getLogger(__name__)
 
 entity_prefix = "huetrans"
 state_prefix = "pyscript." + entity_prefix
@@ -49,7 +49,7 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
         end = state.getattr(endtime_entity)["timestamp"]
         seconds_start_to_end = end - start
         time_factor = seconds_start_to_end / seconds_to_complete_trans
-        log.info("time_factor: " + str(time_factor) + ", Original running time: " + str(datetime.timedelta(seconds=seconds_to_complete_trans)) + ", Actual running time: " + str(datetime.timedelta(seconds=seconds_start_to_end)))
+        log.debug("time_factor: " + str(time_factor) + ", Original running time: " + str(datetime.timedelta(seconds=seconds_to_complete_trans)) + ", Actual running time: " + str(datetime.timedelta(seconds=seconds_start_to_end)))
 
     seconds_for_remaining_scenes = 0
     scene_that_should_be_active = None
@@ -66,7 +66,7 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
             delay = scn["delay"]
         # Max allowed time from Hue is 65535 * 100ms, i.e. 1:49:13, so we limit to that (anything getting above that will change the "ratios", but that is acceptable)
         if scene_time > 65535/10:
-            log.info("Wanted run time makes this scene run longer that 1:49:13 (max from Hue), so run time is truncated. Wanted run time for \"" + scn["name"] + "\": " + str(datetime.timedelta(seconds=scene_time)))
+            log.debug("Wanted run time makes this scene run longer that 1:49:13 (max from Hue), so run time is truncated. Wanted run time for \"" + scn["name"] + "\": " + str(datetime.timedelta(seconds=scene_time)))
             scene_time = 65535/10
         seconds_for_remaining_scenes += scene_time + delay
         scene_that_should_be_active["normaltimeinseconds"] = scene_time
@@ -96,7 +96,7 @@ def get_scene_to_activate_with_time_and_previous(transition_group):
             "previous": None
         }
     else:
-        log.info("Remaining run time for \"" + current_trans["friendly_name"] + "\": " + start_time + " to " + final_endtime + ".")
+        log.debug("Remaining run time for \"" + current_trans["friendly_name"] + "\": " + start_time + " to " + final_endtime + ".")
         return {
             "current": scene_that_should_be_active,
             "previous": previous_scene
@@ -184,7 +184,7 @@ fields:
     sensor = "sensor.template_current_transition_" + transition_group
     if use_next:
         sensor = "sensor.template_next_transition_" + transition_group
-    log.info("Reading state: " + sensor)
+    log.debug("Reading state: " + sensor)
     next_trans_group = state.get(sensor)
     set_current_trans(next_trans_group)
 
@@ -238,7 +238,7 @@ fields:
         log.debug(next_trans)
         input_datetime.set_datetime(entity_id="input_datetime.lysfade_start_neste_" + transition_group + "fade",time=next_trans["start_time"])
     else:
-        log.info("No more transitions scheduled for today for \"" + transition_group + "\"...")
+        log.info("\"" + transition_group + "\": No more transitions scheduled for today, thus not setting a new start time for this group...")
 
 @service
 def set_current_trans(trans):
@@ -259,12 +259,12 @@ fields:
     for val in state.names(domain="pyscript"):
         if entity_prefix+"_"+transition_group in val:
             state.set(val,"off")
-    log.info("Set state to off for all transitions in group: " + transition_group)
+    # log.info("Set state to off for all transitions in group: " + transition_group)
     state.set(trans,"on")
-    log.info("Set state to on for: " + trans)
+    log.info("\"" + transition_group + "\": Set state to on for: " + trans +  " (and to off for all others in the group)")
 
 @service
-def trigger_transition_scene(transition_group, only_for_room=None):
+async def trigger_transition_scene(transition_group, only_for_room=None):
     """yaml
 name: Trigger next transition scene
 description: >
@@ -300,9 +300,9 @@ fields:
             only_for_room = only_for_room_attr["entity_id"]
         # If we are currently running a transition, don't run the "single room" action (it is probably triggered by the transition actually turning on the lights)
         if state.get("timer.lysfade_aktiv_trans_trigger_" + transition_group) == "active":
-            log.info("Skipping only_for_room run for: " + only_for_room)
+            log.debug("Skipping only_for_room run for: " + only_for_room)
             return
-        log.info("Will ONLY run for the following rooms on this run: " + only_for_room)
+        log.debug("Will ONLY run for the following rooms on this run: " + only_for_room)
     else:
         timer.start(entity_id="timer.lysfade_aktiv_trans_trigger_" + transition_group)
 
@@ -311,7 +311,7 @@ fields:
         return
 
     scenes = get_scene_to_activate_with_time_and_previous(transition_group)
-    log.info(scenes)
+    log.debug(scenes)
 
     alarmActive = state.get("input_boolean.alarm_aktiv") == "on"
     alarmLightActive = state.get("input_boolean.alarm_med_lys") == "on"
@@ -363,10 +363,10 @@ fields:
             await asyncio.sleep(delay_between_triggers)
 
     if has_finished:
-        log.info("This transition has finished, but is still the current transition. Setting time for next transition group to start.")
+        log.info("This transition (\"" + current_trans["friendly_name"] + "\") has finished, but is still the current transition. Setting time for next transition group to start.")
         set_trans_start_time(transition_group)
         idle_delay = (prefade_duration - delay) + 15
-        log.info("Waiting " + str(idle_delay) + " seconds before setting fadeend entities to idle")
+        log.debug("Waiting " + str(idle_delay) + " seconds before setting fadeend entities to idle")
         if current_trans != None and "Rooms" in current_trans:
             for room in current_trans["Rooms"]:
                 pyscript.set_fadeend_entity_state(room_entity=room, new_state="idle", delay=idle_delay)
@@ -384,12 +384,12 @@ fields:
         timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=wait_time)
         return
 
+    log.info("Next scene: \"" + scenes["current"]["name"] + "\", no. " + str(scenes["current"]["index"]) + " of " + str(len(current_trans["Scenes"])) + " in " + current_trans["friendly_name"])
     if anything_activated:
-        log.info("Waiting " + str(prefade_duration) + " seconds for the previous scene to load")
+        log.debug("Waiting " + str(prefade_duration) + " seconds for the previous scene to load")
         await asyncio.sleep(prefade_duration)
-        log.info("Now loading the actual scene")
+        log.debug("Now loading the actual scene")
     lysfade_settings = state.getattr("pyscript.transtools_settings")
-    log.info("Next scene: \"" + scenes["current"]["name"] + "\", no. " + str(scenes["current"]["index"]) + " of " + str(len(current_trans["Scenes"])))
     delay = 0
     for room in current_trans["Rooms"]:
         if only_for_room != None and only_for_room != room:
@@ -409,7 +409,7 @@ fields:
         "parentTrans": current_trans
     })
     duration = round(scenes["current"]["timeinseconds"] + scenes["current"]["delay"], 0)
-    log.info("Starting timer to trigger next scene in: " + str(datetime.timedelta(seconds=duration)))
+    log.debug("Starting timer to trigger next scene in: " + str(datetime.timedelta(seconds=duration)))
     timer.start(entity_id="timer.lysfade_neste_trigger_" + transition_group, duration=duration-delay)
 
 def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, force_run=False, ignore_currentscene=False):
@@ -445,13 +445,13 @@ def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, fo
     scene_activated = False
     already_at_scene = False
     if already_at_scene:
-        log.info("  > " + room_entity + ": Room is already at, or activating, the correct scene. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+        log.debug("  > " + room_entity + ": Room is already at, or activating, the correct scene. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
         return
     elif not lights_on:
-        log.info("  > " + room_entity + ": Lights are not on, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+        log.debug("  > " + room_entity + ": Lights are not on, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
         return
     elif not trans_active:
-        log.info("  > " + room_entity + ": Transitions are disabled, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
+        log.debug("  > " + room_entity + ": Transitions are disabled, will not do anything. Current: \"" + roomsettings["currentScene"] + "\", Target: \"" + targetid + "\", To activate: \"" + scn["id"] + "\" (\"" + scene_name + "\")")
         return
     else:
         debug_info = ""
@@ -463,7 +463,7 @@ def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, fo
             debug_info = " DEBUG MODE, skipping:"
         if "loginfo" not in scn:
             scn["loginfo"] = "Triggering scene"
-        log.info("  > " + room_entity + ":" + debug_info + " " +scn["loginfo"] + " \"" + scene_name + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
+        log.debug("  > " + room_entity + ":" + debug_info + " " +scn["loginfo"] + " \"" + scene_name + "\" (id: \"" + scn["id"] + "\") with a transitiontime of " + str(transition_time) + " seconds")
         roomsettings["currentScene"] = scn["id"]
         roomsettings["currentSceneName"] = scene_name
         scene_activated = True
@@ -486,7 +486,7 @@ def trigger_for_room_if_active(room_entity, scn, scene_name, targetid, delay, fo
     return scene_activated
 
 @service
-def set_fadeend_entity_state(room_entity, new_state, delay=0):
+async def set_fadeend_entity_state(room_entity, new_state, delay=0):
     if delay > 0:
         await asyncio.sleep(delay)
     room_key = room_entity.replace(".","_")
@@ -538,6 +538,7 @@ fields:
         required: true
 """
     trigger = str(trigger)
+    log.info(trigger)
     trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\g<1>,\g<3>',trigger)
     comma_replacement = ";;;"
     for item in re.findall("\[[^]]*\]", trigger):
@@ -551,13 +552,14 @@ fields:
     trigger = trigger.replace("]\",","],")
     trigger = trigger.replace("'","\"")
     trigger = trigger.replace(" None"," null")
+    log.info(trigger)
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
     log.debug("Entity that triggered the automation: " + trigger_data["entity_id"])
     trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])
 
 @service
-def run_night_light(duration_mins):
+async def run_night_light(duration_mins):
     """yaml
 name: Run night light
 description: Start night light and let it run for the specified duration

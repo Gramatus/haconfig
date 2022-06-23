@@ -4,8 +4,6 @@ import asyncio
 import spotify_services
 import database_services
 
-_LOGGER = logging.getLogger(__name__)
-
 # Purpose of this script: playing podcast episodes from HA.
 # This cannot be done with the normal spotify integration (I think), so I need to use spotcast - but I need to play it on whatever is already the active entity...
 
@@ -67,32 +65,31 @@ fields:
     if device == None:
         device = "media_player.godehol"
     player_attr = state.getattr(device)
-    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
+    log.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
     spotify_uri = "spotify:playlist:" + playlistid
     if ":" in playlistid:
         spotify_uri = playlistid
     spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
     source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
-        # _LOGGER.debug("  - Getting ID for the related shuffled shadow playlist")
+        # log.debug("  - Getting ID for the related shuffled shadow playlist")
         playlistid, playlist_exists = spotify_services.ensure_shuffle_playlist_exists(source_playlistid)
         if not playlist_exists:
-            _LOGGER.info("Shadow playlist not found, will create one")
+            log.info("Shadow playlist not found, will create one")
             shuffle_type = "Update shadow playlist"
     if shuffle and shuffle_type == "Update shadow playlist":
-        _LOGGER.info("  - Updating the related shuffled shadow playlist")
+        log.info("  - Updating the related shuffled shadow playlist")
         input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + source_playlistid)
         playlistid = spotify_services.ensure_shuffled_playlist(source_playlistid)
         input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
     # Stuff fails if the connection is not ready (i.e. Spotify is not aware of an active playback device)
-    _LOGGER.info("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
+    log.debug("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
     await asyncio.sleep(delay_seconds_start_spotcast)
-
-    _LOGGER.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
+    log.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
     pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
-    _LOGGER.info("  - Waiting " + str(delay_seconds) + " more seconds")
+    log.debug("  - Waiting " + str(delay_seconds) + " more seconds")
     await asyncio.sleep(delay_seconds)
-    _LOGGER.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
+    log.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
     pyscript.volume_increase(fadein_seconds=fadein_seconds, device=device, initial_volume = 0.0, final_volume = final_volume)
 
 @service
@@ -110,7 +107,7 @@ fields:
 """
     if playlistid is not None:
         playingEntity, playState = getPlayingEntity()
-        _LOGGER.debug("Calling spotcast.start")
+        log.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
 @service
@@ -128,11 +125,11 @@ fields:
 """
     if playlistid is not None:
         playingEntity, playState = getPlayingEntity()
-        _LOGGER.debug("Calling spotcast.start")
+        log.debug("Calling spotcast.start")
         spotcast.start(entity_id="media_player.godehol",uri="spotify:playlist:"+playlistid,shuffle=True,random_song=True)
 
 @service
-def play_next_podcast_episode(showid, device=None):
+async def play_next_podcast_episode(showid, device=None):
     """yaml
 name: Play next episode
 description: Plays the next unplayed episode (or the currently playing if one is not finnished) of the podcast with the given showid
@@ -206,13 +203,13 @@ fields:
     #     }
     # })
     player_attr = state.getattr(device)
-    _LOGGER.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with a rather random playlist since spotcast overrides my show selection")
+    log.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with a rather random playlist since spotcast overrides my show selection")
     delay_seconds = 5
     spotcast_uri = "spotify:playlist:37i9dQZF1DX20xDs0SXeZu"
     spotcast.start(entity_id=device, uri=spotcast_uri)
-    _LOGGER.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
+    log.info("  > Waiting " + str(delay_seconds) + " seconds for connection to be ready")
     await asyncio.sleep(delay_seconds)
-    _LOGGER.info("  - Playing podcast on spotify: \"" + spotify_uri + "\"")
+    log.info("  - Playing podcast on spotify: \"" + spotify_uri + "\"")
     pyscript.play_playlist_at_position(playlistid=spotify_uri, position=offset+1, shuffle=False)
 
 @service
@@ -230,43 +227,43 @@ fields:
 """
     if episodeid is not None:
         playingEntity, playState = getPlayingEntity()
-        _LOGGER.debug("Calling spotcast.start")
+        log.debug("Calling spotcast.start")
         spotcast.start(entity_id=playingEntity,uri="spotify:episode:"+episodeid)
 
 @service
 def gramatus_test2(entity_id):
-    _LOGGER.debug("Testing my python skillz")
-    _LOGGER.debug("entity_id %s",entity_id)
+    log.debug("Testing my python skillz")
+    log.debug("entity_id %s",entity_id)
     if entity_id is not None:
         inGroup = ['media_player.badet' , 'media_player.fm', 'media_player.kjokkenet', 'media_player.kontoret']
         playState = "playing"
         spotifyState = media_player.spotify_gramatus
         spotifyDetails = state.getattr(media_player.spotify_gramatus)
-        _LOGGER.debug("Spotify status: %s",spotifyState)
-        _LOGGER.debug("Spotify status details: %s",spotifyDetails)
-        _LOGGER.debug("Spotify is playing: %s",spotifyState.media_content_id)
+        log.debug("Spotify status: %s",spotifyState)
+        log.debug("Spotify status details: %s",spotifyDetails)
+        log.debug("Spotify is playing: %s",spotifyState.media_content_id)
         if spotifyState == playState:
-            _LOGGER.debug("Spotify is already playing, will only switch where it plays")
+            log.debug("Spotify is already playing, will only switch where it plays")
         else:
-            _LOGGER.debug("Spotify is not playing, will also start playing stuff")
+            log.debug("Spotify is not playing, will also start playing stuff")
         group_state = media_player.Godehol
         if entity_id == "media_player.Godehol":
             if group_state == playState:
-                _LOGGER.debug("Godehol was selected, but is already playing")
+                log.debug("Godehol was selected, but is already playing")
             else:
-                _LOGGER.debug("Godehol was selected, and is not playing")
+                log.debug("Godehol was selected, and is not playing")
         elif entity_id in inGroup and group_state == playState:
-            _LOGGER.debug("Godehol is playing and the selected entity is part of that group")
+            log.debug("Godehol is playing and the selected entity is part of that group")
         elif state.get(entity_id) == playState:
-            _LOGGER.debug("%s is already playing",entity_id)
+            log.debug("%s is already playing",entity_id)
         else:
-            _LOGGER.debug("Seems the request is to do something new")
-        _LOGGER.debug("entity_id state: %s",state.get(entity_id))
+            log.debug("Seems the request is to do something new")
+        log.debug("entity_id state: %s",state.get(entity_id))
         service_data = {"entity_id": entity_id,"uri":"spotify:playlist:0C2U8SFwZ3Y9bBjVa2KSMx"}
-        _LOGGER.debug("service_data %s",service_data)
-        _LOGGER.debug("Calling spotcast.start")
+        log.debug("service_data %s",service_data)
+        log.debug("Calling spotcast.start")
         #spotcast.start(entity_id=entity_id,uri="spotify:playlist:0C2U8SFwZ3Y9bBjVa2KSMx")
-        _LOGGER.debug("DONE")
+        log.debug("DONE")
 
 @service
 def ensure_shuffled_playlist(playlistid):
@@ -338,7 +335,7 @@ def update_played_tracks_list():
     group_count = int(len(track_list)/group_size) + 1
     if len(track_list) == 0:
         group_count = 0
-    _LOGGER.info(group_count)
+    log.info(group_count)
     for i in range(group_count):
         track_ids = ""
         group = None
@@ -349,7 +346,7 @@ def update_played_tracks_list():
         for track in group:
             track_ids += track["uri"].split(":")[2] + ","
         track_ids = track_ids[:-1]
-        _LOGGER.info(track_ids)
+        log.info(track_ids)
         items = spotify_services.spotify_get("/tracks?ids=" + track_ids)
         for item in items:
             database_services.update_played_tracks_data(item)

@@ -32,28 +32,28 @@ fields:
         description: Trigger data from an automation
         required: true
 """
+    #log.info(trigger)
     # Convert the text version of the trigger data back to something we can load as a JSON object
     trigger = re.compile("(\".*)(')([^\"]*)(')(\")").sub('\g<1>\\\"\g<3>\\\"\g<5>',trigger)
     trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
     trigger = re.compile("(<Event hue_event\[L\]:)([^>]*)(>)").sub('{\g<2>}',trigger)
     trigger = trigger.replace("'","\"")
-    # _LOGGER.info(trigger)
+    #log.info(trigger)
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
+    #log.info(trigger_data)
     event = trigger_data["event"]
-    switch_id = event["id"]
-    switch_event = int(event["event"])
+    switch_id = event["id"].replace("_button", "")
+    switch_event_button_id = int(event["subtype"])
     buttons = { 1: "On", 2: "DimUp", 3: "DimDown", 4: "Off" }
-    # ((int)button * 1000) + (int)state
-    switch_button = buttons.get(switch_event // 1000)
+    # switch_button = buttons.get(switch_event // 1000)
+    switch_button = buttons.get(switch_event_button_id)
     # initial_press: DON'T use this normally. It will trigger on ALL presses, whether short or long. Use short_release instead.
     # repeat: Triggers after the button has been held for about a second. Then (I believe) it will re-trigger (every second or half-second or something?), thus it can be used e.g. for dimming up while holding.
     # short_release: Triggers only if the button is released quickly
     # long_release: Triggers after a hold is done. Probably most useful for "finishing" tasks or something.
-    states = { 0: "initial_press", 1: "repeat", 2: "short_release", 3: "long_release" }
-    switch_state = states.get(switch_event % 1000)
-    event_time = event["last_updated"]
-    log.debug("Hue Event triggered. switch_id: \"" + str(switch_id) + "\", switch_event: " + str(switch_event) + ", switch_button: " + str(switch_button) + ", switch_state: " + str(switch_state) + ", event_time: " + str(event_time))
+    switch_event_type = event["type"]
+    # log.info("Hue Event triggered. switch_id: \"" + str(switch_id) + "\", switch_event_button_id: " + str(switch_event_button_id) + ", switch_button: " + str(switch_button) + ", switch_event_type: " + str(switch_event_type)) # + ", event_time: " + str(event_time)
     area_ids = []
     if switch_id == "bryterkontor":
         area_ids = ["kontor"]
@@ -61,12 +61,13 @@ fields:
         area_ids = ["gang_nede", "kontor"]
     elif switch_id == "bryterkjokken":
         area_ids = ["kjokken"]
-    if switch_button == "On" and switch_state == "short_release":
+    if switch_button == "On" and switch_event_type == "short_release":
         for area_id in area_ids:
             pyscript.turn_on_ikea_lights_when_room_turned_on(area_id=area_id)
-    elif switch_button == "Off" and switch_state == "short_release":
+    elif switch_button == "Off" and switch_event_type == "short_release":
         for area_id in area_ids:
             pyscript.turn_off_ikea_lights_when_room_turned_off(area_id=area_id)
+    # log.info("Done with event handling")
 
 @service
 def toggle_thermostat(thermostat):
@@ -87,7 +88,7 @@ fields:
     current_temp = state.get(data["sensor_entity"])
     target_temp = state.get(data["target_entity"])
     target_state = "off" if current_temp > target_temp else "on"
-    _LOGGER.info("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
+    log.debug("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
     for switch in data["switches"]:
         if target_state == "off":
             light.turn_off(entity_id=switch)
@@ -101,13 +102,13 @@ def start_wakeup_light():
 name: Start wakeup light
 description: Start the wakeup light routine
 """
-    _LOGGER.info("This method is no longer used, returning")
+    log.warning("This method is no longer used, returning")
     return
     url = 'http://'+pyscript.config["hue_ip"]+'/api/'+pyscript.config["hue_user"]+'/sensors/143/state'
     body = '{"status": 1}'
     async with aiohttp.ClientSession() as session:
         async with session.put(url,data=body) as response:
-            _LOGGER.debug("Response from Hue: Status "+str(response.status)+", reply: "+response.text())
+            log.debug("Response from Hue: Status "+str(response.status)+", reply: "+response.text())
 
 @service
 def turn_on_scene_by_id(scene_id, group_id=None, transitionhours=0, transitionmins=0, transitionsecs=0, transitionms=400, no_logging=False):
@@ -124,7 +125,7 @@ fields:
     group_id:
         description: ID of group (if omitted, the "all lights group" will be used)
         required: false
-        example: 2
+        example: light.kontor
         selector:
             entity:
                 domain: light
@@ -244,7 +245,7 @@ fields:
                     state.set(entity, value = "off")
                 state.set(scene_entity,value = "on")
 
-def get_bridge():
+async def get_bridge():
     bridge = aiohue.Bridge(
         pyscript.config["hue_ip"],
         username=pyscript.config["hue_user"],
