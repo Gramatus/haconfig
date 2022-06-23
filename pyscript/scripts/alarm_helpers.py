@@ -208,16 +208,16 @@ name: Ensure that the alarm actually started as expected
             need_to_check_alarm = False
             break
         minutes_since_wakeup = round(time_since_wakeup/60, 1)
-        ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
+        # ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
         chromecast_power_plug = "device_not_yet_configured"
         # cc_time_since_turnon = (state.get(chromecast_power_plug + ".last_changed") - midnight).total_seconds()
         cc_time_since_turnon = 5*60 # Until I actually have a plug to use...
         # If not ok after 15 minutes, and HA has been up for more than 60 minutes, try restaring HA
-        if time_since_wakeup > 15*60 and ha_uptime_seconds > 60*60:
-            log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, restarting home assistant to see if that helps (HA uptime: " + str(datetime.timedelta(seconds=ha_uptime_seconds)) + ")")
-            homeassistant.restart()
+        # if time_since_wakeup > 15*60 and ha_uptime_seconds > 60*60:
+        #     log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, restarting home assistant to see if that helps (HA uptime: " + str(datetime.timedelta(seconds=ha_uptime_seconds)) + ")")
+        #     homeassistant.restart()
         # If not ok after 10 minutes, and the smart plug powering the chromecastdevice has been on for more than 60 minutes, try turning that off and then on again
-        elif time_since_wakeup > 10*60 and cc_time_since_turnon > 60*60:
+        if time_since_wakeup > 10*60 and cc_time_since_turnon > 60*60:
             log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to restart chromecast device (by turning power off/on)")
             #light.turn_off(chromecast_power_plug)
             # await asyncio.sleep(15)
