@@ -539,6 +539,10 @@ fields:
 """
     trigger = str(trigger)
     log.info(trigger)
+    # Remove info on scenes - we don't need it an thus I haven't worked on reformatting it to JSON
+    trigger = re.compile("hue_scenes={[^}]*}, ").sub('',trigger)
+    # Remove info on lights - we don't need it an thus I haven't worked on reformatting it to JSON
+    trigger = re.compile("lights={[^}]*}, ").sub('',trigger)
     trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\g<1>,\g<3>',trigger)
     comma_replacement = ";;;"
     for item in re.findall("\[[^]]*\]", trigger):
