@@ -22,20 +22,17 @@
 #   state_topic: 'CumulusMX/Interval'
 #   unit_of_measurement: '°C'
 #   value_template: '{{ value_json[''temperature.outside''] }}'
-- platform: mqtt
-  name: 'Weather: Latest interval data update'
+- name: 'Weather: Latest interval data update'
   state_topic: 'CumulusMX/Interval'
   value_template: '{{ value_json[''time''] }}'
   json_attributes_topic: 'CumulusMX/Interval'
   json_attributes_template: '{{ value_json[''Weather''] | tojson }}'
-- platform: mqtt
-  name: 'Weather: Latest current data update'
+- name: 'Weather: Latest current data update'
   state_topic: 'CumulusMX/DataUpdate'
   value_template: '{{ value_json[''time''] }}'
   json_attributes_topic: 'CumulusMX/DataUpdate'
   json_attributes_template: '{{ value_json | tojson }}'
-- platform: mqtt
-  name: 'Weather: GramatusServer system info'
+- name: 'Weather: GramatusServer system info'
   state_topic: 'CumulusMX/Interval'
   value_template: 'version {{ value_json[''System''][''version''] }}, build {{ value_json[''System''][''build''] }}'
   json_attributes_topic: 'CumulusMX/Interval'

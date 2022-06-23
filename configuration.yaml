@@ -32,9 +32,9 @@ frontend:
 ifttt:
   key: !secret ifttt_key
 
-spotify:
-  client_id: !secret spotify_client_id
-  client_secret: !secret spotify_client_secret
+# spotify:
+#   client_id: !secret spotify_client_id
+#   client_secret: !secret spotify_client_secret
 
 rest_command: !include rest.yaml
 
@@ -54,7 +54,8 @@ tellstick:
   port: [50800, 50801]
 
 sensor: !include sensors.yaml
-sensor weather: !include weather.yaml
+mqtt:
+  sensor: !include mqtt.yaml
 
 template: !include templates.yaml
 
