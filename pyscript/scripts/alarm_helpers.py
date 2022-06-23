@@ -173,7 +173,7 @@ description: Sounding the alarm
 """
     log.info("Start: Wakeup routine")
     playlistID = state.get("input_text.vekking_spilleliste_id")
-    pyscript.play_playlist_random(playlistid=playlistID, device=device, shuffle_type="No shuffle", fadein_seconds=60, final_volume=0.9, delay_seconds_start_spotcast=10)
+    pyscript.play_playlist_random(playlistid=playlistID, device=device, shuffle_type="No shuffle", fadein_seconds=60, final_volume=0.5, delay_seconds_start_spotcast=10)
     log.info("  > Waiting 5 seconds before turning on sound system")
     await asyncio.sleep(10)
     log.info("Turning on sound system")
