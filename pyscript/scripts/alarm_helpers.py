@@ -107,7 +107,7 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
     light.turn_on(entity_id="light.soverom",transition=10,kelvin=2000,brightness=30)
     log.info("Setting HVAC settings")
     melcloud.set_vane_vertical(entity_id="climate.soverom",position="auto")
-    climate.set_temperature(entity_id="climate.soverom",temperature=17.5)
+    climate.set_temperature(entity_id="climate.soverom",temperature=input_number.temperatur_soverom_natt)
     turnoff_time = str(datetime.timedelta(seconds=int((datetime.datetime.now() - datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())+5*60))
     turnon_time = str(datetime.timedelta(seconds=state.getattr("input_datetime.vekking")["timestamp"]-5*60))
     log.info("Telling Fully to turn off WiFi between " + turnoff_time + " and " + turnon_time)
@@ -119,6 +119,10 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
     log.info("Turning off Fully screen")
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
     log.info("Done")
+
+@service
+def test_hvac_temp():
+    climate.set_temperature(entity_id="climate.soverom",temperature=input_number.temperatur_soverom_natt)
 
 @service
 def test_wifi_off():
