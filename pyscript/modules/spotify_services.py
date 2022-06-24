@@ -227,7 +227,7 @@ def skip_track():
 def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResult=False):
     max_passes = 10
     previous_track = None
-    log.info("Track list to fix has a length of: " + str(len(sorted_tracks)))
+    # log.info("Track list to fix has a length of: " + str(len(sorted_tracks)))
     for i in range(max_passes):
         # _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
         updated_list = []
@@ -251,9 +251,9 @@ def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResul
                         seconds_from_min_to_this = int(track["last_played"].timestamp()) # Handles tracks that has not been played before
                     # _LOGGER.debug("seconds_from_min_to_this:" + str(seconds_from_min_to_this))
                     if seconds_from_min_to_this > 0:
-                        move_secs = (seconds_from_min_to_this * 0.2) - (random.randrange(0, seconds_from_min_to_this))
+                        move_secs = (seconds_from_min_to_this * 0.2) - (random.randrange(0, seconds_from_min_to_this) + (1 + ((i * i) / 10 )))
                     if logResult:
-                        _LOGGER.info("#" + str(track_num) + ": Seconds to move " + track["name"] + " (" + track["artist"] + " / " + track["album"] + "): " + str(move_secs) + ", original timestamp: " + str(track["last_played"].timestamp()))
+                        _LOGGER.info("Pass #" + str(i+1) + ": Seconds to move #" + str(track_num)+" \"" + track["name"] + "\" (" + track["artist"] + " / " + track["album"] + "): " + str(move_secs) + ", original timestamp: " + str(track["last_played"].timestamp()))
                     track["last_played"] = track["last_played"] + datetime.timedelta(seconds=move_secs)
                     order_updated = True
                 # else:
@@ -263,9 +263,9 @@ def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResul
             updated_list.append(track)
         sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
         if i == max_passes - 1:
-            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
+            _LOGGER.info(">>> Final number of passes to avoid groupings: " + str(i + 1))
         if order_updated == False:
-            _LOGGER.debug("Final number of passes to avoid groupings: " + str(i + 1))
+            _LOGGER.info(">>> Final number of passes to avoid groupings: " + str(i + 1))
             break
     return sorted_tracks
 
