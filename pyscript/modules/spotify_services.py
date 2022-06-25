@@ -8,6 +8,7 @@ import json
 import random
 import urllib
 import database_services
+import math
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
             encoded_url = URL(full_url,encoded=True)
             async with session.get(encoded_url, allow_redirects=False, headers=headers) as response:
                 if response.status // 100 != 2:
-                    _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                    _LOGGER.warning(" GET > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                     return
                 resp_json = response.json()
                 # Used for debugging only
@@ -140,7 +141,7 @@ async def spotify_post(relative_url, json_data, return_response=False):
         encoded_url = URL(full_url,encoded=True)
         async with session.post(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
             if response.status // 100 != 2:
-                _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                _LOGGER.warning(" POST > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                 return
             resp_text = response.text()
             if len(resp_text) < 200:
@@ -163,7 +164,7 @@ async def spotify_put(relative_url, json_data=None, return_response=False):
         encoded_url = URL(full_url,encoded=True)
         async with session.put(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
             if response.status // 100 != 2:
-                _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                _LOGGER.warning(" PUT > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                 return
             resp_text = response.text()
             if len(resp_text) < 200:
@@ -186,7 +187,7 @@ async def spotify_delete(relative_url, json_data):
         encoded_url = URL(full_url,encoded=True)
         async with session.delete(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
             if response.status // 100 != 2:
-                _LOGGER.warning(" > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                _LOGGER.warning(" DELETE > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                 return
             resp_text = response.text()
             if len(resp_text) < 200:
@@ -226,7 +227,8 @@ def skip_track():
 
 def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResult=False):
     max_passes = 10
-    previous_track = None
+    parent_track = None
+    grandparent_track = None
     # log.info("Track list to fix has a length of: " + str(len(sorted_tracks)))
     for i in range(max_passes):
         # _LOGGER.info("Avoid groupings, pass #" + str(i + 1))
@@ -235,31 +237,32 @@ def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResul
         track_num = 0
         for track in sorted_tracks:
             track_num = track_num + 1
-            if previous_track != None:
-                # if logResult and track["album"]=="Cocktail Bar Jazz":
-                #     _LOGGER.info("#" + str(track_num) + ": Found! Cocktail Bar Jazz" + " for track (" + track["name"] + ")")
-                # else:
-                #     _LOGGER.info("#" + str(track_num) + ": Album was: " + track["album"] + " for track (" + track["name"] + ")")
-                if previous_track["artist"] == track["artist"] or previous_track["album"] == track["album"]:
-                    # if previous_track["artist"] == track["artist"]:
-                    #     _LOGGER.info("Found two by each other for: " + track["artist"])
-                    # if previous_track["album"] == track["album"]:
-                    #     _LOGGER.info("Found two by each other for: " + track["album"])
-                    seconds_from_min_to_this = int((track["last_played"] - lowest_last_played_datetime).total_seconds())
-                    move_secs = 0
-                    if seconds_from_min_to_this <= 0:
-                        seconds_from_min_to_this = int(track["last_played"].timestamp()) # Handles tracks that has not been played before
-                    # _LOGGER.debug("seconds_from_min_to_this:" + str(seconds_from_min_to_this))
-                    if seconds_from_min_to_this > 0:
-                        move_secs = (seconds_from_min_to_this * 0.2) - (random.randrange(0, seconds_from_min_to_this) + (1 + ((i * i) / 10 )))
-                    if logResult:
-                        _LOGGER.info("Pass #" + str(i+1) + ": Seconds to move #" + str(track_num)+" \"" + track["name"] + "\" (" + track["artist"] + " / " + track["album"] + "): " + str(move_secs) + ", original timestamp: " + str(track["last_played"].timestamp()))
-                    track["last_played"] = track["last_played"] + datetime.timedelta(seconds=move_secs)
-                    order_updated = True
-                # else:
-                #     if logResult and track["album"]=="Cocktail Bar Jazz":
-                #         _LOGGER.debug("#" + str(track_num) + ": These are different: \"" + previous_track["album"] + "\" / \"" + track["album"] + "\"")
-            previous_track = track
+            equal_parent = parent_track != None and (parent_track["artist"] == track["artist"] or parent_track["album"] == track["album"])
+            equal_grandparent = grandparent_track != None and (grandparent_track["artist"] == track["artist"] or grandparent_track["album"] == track["album"])
+            if equal_parent or equal_grandparent:
+                seconds_from_min_to_this = int((track["last_played"] - lowest_last_played_datetime).total_seconds())
+                if seconds_from_min_to_this <= 0:
+                    seconds_from_min_to_this = seconds_from_min_to_this * -1 # Handles tracks that has not been played before
+                # _LOGGER.debug("seconds_from_min_to_this:" + str(seconds_from_min_to_this))
+                if seconds_from_min_to_this == 0:
+                    seconds_from_min_to_this = 1
+                # Get a random number +/- half the distance between the oldest track and the position of this track
+                rand_range = (seconds_from_min_to_this * 0.5) - random.randrange(0, seconds_from_min_to_this)
+                # Increase the move time if we are on subsequent passes (to increase the likelihood of "fixing" stuff), this number will be approximately
+                # log4: 1.4 -> 1.6 -> 1.9 -> 2.2 -> 2.5 -> 2.8 -> 3.2 -> 3.5 -> 3.9 -> 4.3 -> 4.7
+                # log5: 1.5 -> 1.8 -> 2.2 -> 2.6 -> 3.0 -> 3.4 -> 3.9 -> 4.4 -> 4.9 -> 5.5 -> 6.0
+                # In windows calc graph mode: 1+0,1(floor(𝑥))^2/(ln(floor(𝑥)+1)/ln(5))^2 
+                pass_offset = 1 + 0.1 * i**2 / math.log(i+2,5)**2
+                move_secs = int(rand_range * pass_offset)
+                if logResult:
+                    _LOGGER.info("Pass #" + str(i+1) + ": Seconds to move #" + str(track_num)+" \"" + track["name"] + "\" (" + track["artist"] + " / " + track["album"] + "): " + str(move_secs) + " (" + str(datetime.timedelta(seconds=move_secs)) + "), original datetime: " + str(track["last_played"]) + ", rand_range: " + str(datetime.timedelta(seconds=rand_range)) + ", pass_offset: " + str(pass_offset))
+                track["last_played"] = track["last_played"] + datetime.timedelta(seconds=move_secs)
+                order_updated = True
+            # else:
+            #     if logResult and track["album"]=="Cocktail Bar Jazz":
+            #         _LOGGER.debug("#" + str(track_num) + ": These are different: \"" + previous_track["album"] + "\" / \"" + track["album"] + "\"")
+            grandparent_track = parent_track
+            parent_track = track
             updated_list.append(track)
         sorted_tracks = sorted(updated_list, key=lambda i:i["last_played"], reverse=False)
         if i == max_passes - 1:
@@ -399,14 +402,17 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
         groups.append(group)
     _LOGGER.info(str(len(sorted_tracks)) + " tracks has been shuffled in " + str(group_count) + " groups of " + str(group_size) + ", Total number of tracks shuffled: " + str(group_count_total))
 
+    fix_after_shuffle = True
     shuffled_tracks = []
+    group_num = 1
     for group in groups:
+        updated_group = group
+        if fix_after_shuffle:
+            updated_group = fix_repeat_artist_album(updated_group, lowest_last_played_datetime, True)
+            _LOGGER.info("Group#" + str(group_num) + ": Updated after shuffling to avoid groupings of same artist/album")
         for track in group:
             shuffled_tracks.append(track)
-    fix_after_shuffle = True
-    if fix_after_shuffle:
-        shuffled_tracks = fix_repeat_artist_album(shuffled_tracks, lowest_last_played_datetime, True)
-        _LOGGER.info("Updated after shuffling to avoid groupings of same artist/album")
+        group_num = group_num + 1
 
     _LOGGER.debug("Removing all items from shadow playlist")
     truncate_playlist(shuffleplaylistid)
