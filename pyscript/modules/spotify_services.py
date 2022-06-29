@@ -48,7 +48,7 @@ async def ensure_token_valid():
     _LOGGER.debug("Token expired at: " + str(datetime.timedelta(seconds=token_expires - int(time.time()))) + ", will get a new token")
     get_spotify_token()
 
-async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=1000, ReturnRaw=False):
+async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=1000, ReturnRaw=False, LogErrors=True):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
 
@@ -65,7 +65,8 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
             encoded_url = URL(full_url,encoded=True)
             async with session.get(encoded_url, allow_redirects=False, headers=headers) as response:
                 if response.status // 100 != 2:
-                    _LOGGER.warning(" GET > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
+                    if LogErrors:
+                        _LOGGER.warning(" GET > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                     return
                 resp_json = response.json()
                 # Used for debugging only
@@ -129,7 +130,7 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
         _LOGGER.debug("Return count: " + str(len(items)))
     return items
 
-async def spotify_post(relative_url, json_data, return_response=False):
+async def spotify_post(relative_url, json_data, return_response=False, RetryCount=0, Attempt=1):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
     headers = {
@@ -140,6 +141,10 @@ async def spotify_post(relative_url, json_data, return_response=False):
     async with aiohttp.ClientSession() as session:
         encoded_url = URL(full_url,encoded=True)
         async with session.post(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            if RetryCount > Attempt and response.status // 100 == 5:
+                _LOGGER.warning(" POST > Attempt " + str(Attempt) + " of " + str(RetryCount) + ": got status " + str(response.status) + ", retrying")
+                spotify_post(relative_url, json_data, return_response, RetryCount=RetryCount, Attempt=Attempt + 1)
+                return
             if response.status // 100 != 2:
                 _LOGGER.warning(" POST > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                 return
@@ -152,7 +157,7 @@ async def spotify_post(relative_url, json_data, return_response=False):
             if return_response:
                 return response.json()
 
-async def spotify_put(relative_url, json_data=None, return_response=False):
+async def spotify_put(relative_url, json_data=None, return_response=False, RetryCount=0, Attempt=1):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
     headers = {
@@ -163,6 +168,10 @@ async def spotify_put(relative_url, json_data=None, return_response=False):
     async with aiohttp.ClientSession() as session:
         encoded_url = URL(full_url,encoded=True)
         async with session.put(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            if RetryCount > Attempt and response.status // 100 == 5:
+                _LOGGER.warning(" PUT > Attempt " + str(Attempt) + " of " + str(RetryCount) + ": got status " + str(response.status) + ", retrying")
+                spotify_put(relative_url, json_data, return_response, RetryCount=RetryCount, Attempt=Attempt + 1)
+                return
             if response.status // 100 != 2:
                 _LOGGER.warning(" PUT > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                 return
@@ -175,7 +184,7 @@ async def spotify_put(relative_url, json_data=None, return_response=False):
             if return_response:
                 return response.json()
 
-async def spotify_delete(relative_url, json_data):
+async def spotify_delete(relative_url, json_data=None, log_data=False, RetryCount=0, Attempt=1):
     ensure_token_valid()
     full_url = "https://api.spotify.com/v1" + relative_url
     headers = {
@@ -183,9 +192,15 @@ async def spotify_delete(relative_url, json_data):
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token
     }
+    if(log_data):
+        _LOGGER.info(json_data)
     async with aiohttp.ClientSession() as session:
         encoded_url = URL(full_url,encoded=True)
         async with session.delete(encoded_url, json=json_data, allow_redirects=False, headers=headers) as response:
+            if RetryCount > Attempt and response.status // 100 == 5:
+                _LOGGER.warning("Attempt " + str(Attempt) + " of " + str(RetryCount) + ": got status " + str(response.status) + ", retrying")
+                spotify_delete(relative_url, json_data, log_data, RetryCount=RetryCount, Attempt=Attempt + 1)
+                return
             if response.status // 100 != 2:
                 _LOGGER.warning(" DELETE > " + str(encoded_url) + ": Status "+str(response.status) + ", Response from server:\n" + response.text())
                 return
@@ -428,24 +443,25 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
         uris.append(track["uri"])
         if len(uris) >= batch_size:
             _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
-            spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris})
+            spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris}, RetryCount=3)
             uris = []
     # Handle the last batch
     if len(uris) > 0:
         _LOGGER.debug("Will post " + str(len(uris)) + " uris to /playlists/" + shuffleplaylistid + "/tracks")
-        spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris})
+        spotify_post("/playlists/" + shuffleplaylistid + "/tracks", {"uris": uris}, RetryCount=3)
     _LOGGER.debug("DONE! Shadow playlist has been updated")
 
-def truncate_playlist(playlistid):
-    playlist = spotify_get("/playlists/" + playlistid, False)
-    if "name" not in playlist:
-        _LOGGER.info("Could not find a name for the playlist we are about to everything stuff from, will not do anything")
-        return
-    if not playlist["name"].startswith("Shuffled:"):
-        _LOGGER.info("Playlist we are about to delete everything from is not marked as a shuffled playlist, will not do anything")
-        _LOGGER.info("Playlist name: " + playlist["name"])
-        return
-    _LOGGER.debug(" > All safeguards reports ok, will proceed to empty the playlist.")
+def truncate_playlist(playlistid, iteration = 1):
+    if(iteration == 1):
+        playlist = spotify_get("/playlists/" + playlistid, False)
+        if "name" not in playlist:
+            _LOGGER.info("Could not find a name for the playlist we are about to everything stuff from, will not do anything")
+            return
+        if not playlist["name"].startswith("Shuffled:"):
+            _LOGGER.info("Playlist we are about to delete everything from is not marked as a shuffled playlist, will not do anything")
+            _LOGGER.info("Playlist name: " + playlist["name"])
+            return
+        _LOGGER.debug(" > All safeguards reports ok, will proceed to empty the playlist.")
     # Get all tracks in playlist
     _LOGGER.debug(" > Getting all tracks (so we can tell Spotify to delete them)")
     # Note: we are NOT using market here as we want the actual URI stored in the playlist
@@ -457,13 +473,22 @@ def truncate_playlist(playlistid):
         track = item["track"]
         uris.append({ "uri": track["uri"] })
         if len(uris) >= batch_size:
-            _LOGGER.debug("Will delete " + str(len(uris)) + " uris from /playlists/" + playlistid + "/tracks")
-            spotify_delete("/playlists/" + playlistid + "/tracks", {"tracks": uris})
+            _LOGGER.info("Will delete " + str(len(uris)) + " uris from /playlists/" + playlistid + "/tracks")
+            spotify_delete("/playlists/" + playlistid + "/tracks", {"tracks": uris}, RetryCount=3)
             uris = []
     # Handle the last group
     if len(uris) > 0:
         _LOGGER.debug("Will delete " + str(len(uris)) + " uris from /playlists/" + playlistid + "/tracks")
-        spotify_delete("/playlists/" + playlistid + "/tracks", {"tracks": uris})
+        spotify_delete("/playlists/" + playlistid + "/tracks", {"tracks": uris}, RetryCount=3)
+    # Retry a few times if some delete operations failed
+    max_retries = 5
+    if(iteration > max_retries):
+        _LOGGER.warning("Reached " + str(max_retries) + " retries, giving up on fully truncating the playlist")
+        return
+    items = spotify_get("/playlists/" + playlistid + "/tracks?limit=100", False, LogErrors=False)
+    if items != None and len(items) > 0:
+        _LOGGER.warn("Not all tracks deleted after iteration #" + str(iteration))
+        truncate_playlist(playlistid, iteration + 1)
 
 def ensure_shuffle_playlist_exists(playlistid):
     # _LOGGER.info("Making sure we have a shadow playlist")

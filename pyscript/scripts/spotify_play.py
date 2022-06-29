@@ -294,8 +294,9 @@ def spotify_test():
     """yaml
 name: Spotify test code
 """
-    spotify_services.update_recently_played()
+    # spotify_services.update_recently_played()
     # spotify_services.skip_track()
+    # spotify_services.truncate_playlist("4ApT3pCnGOorgTvL1afzRz")
 
 @service
 def play_playlist_at_position(playlistid, position, shuffle=False):
