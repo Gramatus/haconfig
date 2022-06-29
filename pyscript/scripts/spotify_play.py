@@ -297,6 +297,10 @@ name: Spotify test code
     # spotify_services.update_recently_played()
     # spotify_services.skip_track()
     # spotify_services.truncate_playlist("4ApT3pCnGOorgTvL1afzRz")
+    json = spotify_services.spotify_get("/tracks/3sAGP8416ReDw0Cy1aXw4R", True, ReturnRaw=True)
+    log.info(json)
+    json = spotify_services.spotify_get("/tracks/0PEzqFe5Mc8fLJSa8JLOsq", True, ReturnRaw=True)
+    log.info(json)
 
 @service
 def play_playlist_at_position(playlistid, position, shuffle=False):

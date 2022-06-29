@@ -329,7 +329,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
             if trackdata["market_uri"] in played_tracks_uri:
                 trackdata["last_played"] = played_tracks_uri[trackdata["market_uri"]]["last_played"]
             elif trackdata["track_identifier"] in played_tracks_identifier:
-                _LOGGER.warning("Track has wrong uri in DB: " + trackdata["uri"]+" / " + trackdata["track_identifier"])
+                _LOGGER.warning("Track has different uri in DB: " + trackdata["uri"]+" / " + trackdata["track_identifier"] + ", DB: " + str(played_tracks_identifier[trackdata["track_identifier"]]))
+                # TODO: Consider updating playlist with uri from DB? Or perhaps not? Seems like this might be hard to do, also this "backup" solution makes sure stuff actually works as expected anyways
                 trackdata["last_played"] = played_tracks_identifier[trackdata["track_identifier"]]["last_played"]
             else:
                 if trackdata["name"] in played_tracks_name:
@@ -473,7 +474,7 @@ def truncate_playlist(playlistid, iteration = 1):
         track = item["track"]
         uris.append({ "uri": track["uri"] })
         if len(uris) >= batch_size:
-            _LOGGER.info("Will delete " + str(len(uris)) + " uris from /playlists/" + playlistid + "/tracks")
+            _LOGGER.debug("Will delete " + str(len(uris)) + " uris from /playlists/" + playlistid + "/tracks")
             spotify_delete("/playlists/" + playlistid + "/tracks", {"tracks": uris}, RetryCount=3)
             uris = []
     # Handle the last group
