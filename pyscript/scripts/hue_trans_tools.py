@@ -585,17 +585,21 @@ fields:
                 step: 5
                 mode: box
 """
-    timer.start(entity_id="timer.natt_nedtelling", duration=duration_mins*60)
+    duration_secs=duration_mins*60
+    timer.start(entity_id="timer.natt_nedtelling", duration=duration_secs)
     # TODO: Consider if I will be saving this anywhere?
     # input_select.select_option(entity_id="input_select.nattlys_varighet", option="15 min")
-    pyscript.turn_on_scene_by_id(scene_id="Y2qG5PtH6AC7b1j")
-    await asyncio.sleep(10)
-    pyscript.turn_on_scene_by_id(scene_id="xyJCA3wUDhukb-w")
-    await asyncio.sleep(9*60 + 50)
-    next_delay = 5*60
-    light.turn_on(entity_id="light.c_hue_go_soverom_1", transition=next_delay, brightness=1)
-    light.turn_on(entity_id="light.c_hue_go_soverom_2", transition=next_delay, brightness=1)
-    await asyncio.sleep(next_delay)
+    duration_secs_part1 = int(duration_secs * 0.7) - 10
+    duration_secs_part2 = int(duration_secs * 0.2)
+    duration_secs_part3 = int(duration_secs * 0.1)
+    # Start leselys
+    pyscript.turn_on_scene_by_id(scene_id="Y2qG5PtH6AC7b1j", group_id="light.soverom", transitionsecs=10, transitionms=0)
+    await asyncio.sleep(10 + duration_secs_part1)
+    # Leselys svakt
+    pyscript.turn_on_scene_by_id(scene_id="xyJCA3wUDhukb-w", group_id="light.soverom", transitionsecs=duration_secs_part2, transitionms=0)
+    await asyncio.sleep(duration_secs_part2)
+    pyscript.turn_on_scene_by_id(scene_id="xKYckIivfoZXBQA", group_id="light.soverom", transitionsecs=duration_secs_part3, transitionms=0)
+    await asyncio.sleep(duration_secs_part3)
     light.turn_off(entity_id="light.c_hue_go_soverom_1")
     light.turn_off(entity_id="light.c_hue_go_soverom_2")
 

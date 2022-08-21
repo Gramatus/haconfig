@@ -61,6 +61,15 @@ fields:
         area_ids = ["gang_nede", "kontor"]
     elif switch_id == "bryterkjokken":
         area_ids = ["kjokken"]
+    elif switch_id == "brytersoverom":
+        timer_id = "timer.natt_nedtelling"
+        if switch_button == "DimUp" and switch_event_type == "short_release":
+            pyscript.run_night_light(duration_mins=15)
+        if switch_button == "DimDown" and switch_event_type == "short_release":
+            pyscript.run_night_light(duration_mins=30)
+        if switch_button == "Off" and switch_event_type == "short_release":
+            if state.get(timer_id) == "active":
+                timer.cancel(entity_id=timer_id)
     if switch_button == "On" and switch_event_type == "short_release":
         for area_id in area_ids:
             pyscript.turn_on_ikea_lights_when_room_turned_on(area_id=area_id)

@@ -114,8 +114,11 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
     pyscript.fully_set_wifi_off_between(timeoff=turnoff_time, timeon=turnon_time, device="fully.nettbrett1")
     log.info("Wait 120 seconds before turning starting to turn the lights off")
     await asyncio.sleep(120)
-    log.info("Turning off lights with a 60 second transition")
-    light.turn_off(entity_id="light.soverom",transition=60)
+    if state.get("timer.natt_nedtelling") == "active":
+        log.info("Not turning off lights since timed night light is active")
+    else:
+        log.info("Turning off lights with a 60 second transition")
+        light.turn_off(entity_id="light.soverom",transition=60)
     log.info("Turning off Fully screen")
     pyscript.fully_turn_off_screen(device="fully.nettbrett1")
     log.info("Done")
