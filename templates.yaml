@@ -57,6 +57,8 @@
     state: >-
       {% if states.sensor.nettbrett1_next_alarm.state == "unavailable" %}
       {{ "unknown" }}
+      {% elif states.sensor.nettbrett1_next_alarm.state == "unknown" %}
+      {{ "unknown" }}
       {% else %}
       {{ as_timestamp(states.sensor.nettbrett1_next_alarm.state)|timestamp_custom('%H:%M', true) }}
       {% endif %}
