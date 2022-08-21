@@ -26,6 +26,8 @@
       name: Ute
     - id: 83
       name: Kjøkkenet
+    - id: 135
+      name: Soverommet
 - platform: template
   sensors:
       time_formatted:
