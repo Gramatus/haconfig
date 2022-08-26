@@ -483,7 +483,8 @@
   - service: pyscript.hue_event_trigger
     data:
       trigger: '{{ trigger }}'
-  mode: single
+  mode: parallel
+  max: 50
 - id: '1634471901458'
   alias: 'Lysfade: Fange opp at lyset blir skrudd av'
   description: ''
