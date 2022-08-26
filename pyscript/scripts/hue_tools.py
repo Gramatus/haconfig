@@ -70,6 +70,11 @@ fields:
         if switch_button == "Off" and switch_event_type == "short_release":
             if state.get(timer_id) == "active":
                 timer.cancel(entity_id=timer_id)
+    elif switch_id == "bryterkjeller":
+        if switch_button == "On" and switch_event_type == "short_release":
+            light.turn_on(entity_id="light.kjeller")
+        if switch_button == "Off" and switch_event_type == "short_release":
+            light.turn_off(entity_id="light.kjeller")
     if switch_button == "On" and switch_event_type == "short_release":
         for area_id in area_ids:
             pyscript.turn_on_ikea_lights_when_room_turned_on(area_id=area_id)
