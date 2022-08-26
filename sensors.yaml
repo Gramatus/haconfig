@@ -26,8 +26,14 @@
       name: Ute
     - id: 83
       name: Kjøkkenet
-    - id: 135
+    - id: 135 # Channel 1
       name: Soverommet
+    - id: 151 # Channel 2
+      name: Kjeller
+    - id: 167 # Channel 3
+      name: Gang nede
+    - id: 183 # Channel 4
+      name: Bad
 - platform: template
   sensors:
       time_formatted:
