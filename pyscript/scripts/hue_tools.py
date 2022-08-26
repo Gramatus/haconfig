@@ -19,7 +19,17 @@ state.persist("pyscript." + entity_prefix_thermo + "kontor", "off", {
     "sensor_entity": "sensor.kontoret_temperature",
     "target_entity": "input_number.termostat_kontoret",
     "switches": [
-        "light.termostat_kontoret"
+        "light.varmeovn_kontoret"
+    ]
+})
+state.persist("pyscript." + entity_prefix_thermo + "kjokken", "off", {
+    "icon": "mdi:thermostat-box",
+    "device_class": "thermostat",
+    "friendly_name": "Innstillinger for termostat på kjøkkenet",
+    "sensor_entity": "sensor.kjokkenet_temperature",
+    "target_entity": "input_number.termostat_kjokkenet",
+    "switches": [
+        "light.varmeovn_kjokkenet"
     ]
 })
 

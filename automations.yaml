@@ -521,13 +521,38 @@
   mode: parallel
   max: 10
 - id: '1661512523095'
-  alias: Test Nexa button
+  alias: 'Dørklokke: trykk'
   description: ''
   trigger:
   - platform: event
     event_type: state_changed
     event_data:
-      entity_id: switch.nexa_remote_button_one
+      entity_id: switch.nexa_doorbell_button
   condition: []
   action: []
+  mode: queued
+- id: '1661521329893'
+  alias: Termostat kjøkkenet
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.kjokkenet_temperature
+    above: 0.05
+    value_template: '{{ (states("sensor.kjokkenet_temperature")|float(default=20))
+      - (states("input_number.termostat_kjokkenet")|float(default=20)) }}'
+  - platform: numeric_state
+    entity_id: sensor.kjokkenet_temperature
+    below: '-0.05'
+    value_template: '{{ (states("sensor.kjokkenet_temperature")|float(default=20))
+      - (states("input_number.termostat_kjokkenet")|float(default=20)) }}'
+  - platform: time_pattern
+    hours: '*'
+    minutes: '15'
+    seconds: '0'
+    id: backup
+  condition: []
+  action:
+  - service: pyscript.toggle_thermostat
+    data:
+      thermostat: pyscript.thermostat_kjokken
   mode: single
