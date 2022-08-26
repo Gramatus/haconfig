@@ -519,3 +519,14 @@
       disabled: true
   mode: parallel
   max: 10
+- id: '1661512523095'
+  alias: Test Nexa button
+  description: ''
+  trigger:
+  - platform: event
+    event_type: state_changed
+    event_data:
+      entity_id: switch.nexa_remote_button_one
+  condition: []
+  action: []
+  mode: single
