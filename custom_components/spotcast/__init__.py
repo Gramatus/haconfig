@@ -175,6 +175,12 @@ def setup(hass: ha_core.HomeAssistant, config: collections.OrderedDict) -> bool:
 
         connection.send_message(websocket_api.result_message(msg["id"], resp))
 
+    def reset_token(call: ha_core.ServiceCall):
+        """service called."""
+        _LOGGER.info("Reloading token")
+        spotcast_controller.get_token_instance()
+
+
     def start_casting(call: ha_core.ServiceCall):
         """service called."""
         uri = call.data.get(CONF_SPOTIFY_URI)
@@ -303,5 +309,6 @@ def setup(hass: ha_core.HomeAssistant, config: collections.OrderedDict) -> bool:
     hass.services.register(
         DOMAIN, "start", start_casting, schema=SERVICE_START_COMMAND_SCHEMA
     )
+    hass.services.register(DOMAIN, "reset_token", reset_token)
 
     return True
