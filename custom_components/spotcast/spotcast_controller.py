@@ -12,6 +12,8 @@ import homeassistant.core as ha_core
 
 import pychromecast
 import spotify_token as st
+import aiohttp
+import json
 import spotipy
 from homeassistant.components.cast.helpers import ChromeCastZeroconf
 from homeassistant.exceptions import HomeAssistantError
@@ -84,8 +86,8 @@ class SpotifyCastDevice:
         )
 
     def startSpotifyController(self, access_token: str, expires: int, access_token_web: str, expires_web: int) -> None:
-        sp = SpotifyController(access_token, expires)
-        # sp = SpotifyController(access_token_web, expires_web)
+        # sp = SpotifyController(access_token, expires)
+        sp = SpotifyController(access_token_web, expires_web)
         self.castDevice.register_handler(sp)
         _LOGGER.info("Added SpotifyController as handler for castDevice")
         # See https://github.com/home-assistant-libs/pychromecast for how to get info and stuff (not sure if it is helpful)
@@ -123,6 +125,33 @@ class SpotifyCastDevice:
 
         raise HomeAssistantError("Failed to get device id from Spotify")
 
+class TokenHelper:
+    sp_dc = None
+    sp_key = None
+    def __init__(self, sp_dc: str, sp_key: str) -> None:
+        self.sp_dc = sp_dc
+        self.sp_key = sp_key
+
+    async def start_session(self):
+        """ Starts session to get access token. """
+        cookies = { 'sp_dc': self.sp_dc, 'sp_key': self.sp_key }
+        async with aiohttp.ClientSession(cookies=cookies) as session:
+            headers = { 'user-agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36" }
+            async with session.get('https://open.spotify.com/get_access_token?reason=transport&productType=web_player', allow_redirects=False, headers=headers) as response:
+                if(response.status != 200):
+                    _LOGGER.info("Did not get 200 response status")
+                    _LOGGER.info(response)
+                    return None, None
+                json_resp = await response.text()
+                _LOGGER.info("Response from get_access_token:")
+                _LOGGER.info(json_resp)
+                # data = json_resp.result()
+                _LOGGER.info(json_resp)
+                config = json.loads(json_resp)
+                access_token = config['accessToken']
+                expires_timestamp = config['accessTokenExpirationTimestampMs']
+                expiration_date = int(expires_timestamp) // 1000
+                return access_token, expiration_date
 
 class SpotifyToken:
     """Represents a spotify token for an account."""
@@ -174,15 +203,19 @@ class SpotifyToken:
 
     def get_spotify_token_web(self) -> tuple[str, int]:
         try:
-            self._access_token_web, self._token_expires_web = st.start_session(
-                self.sp_dc, self.sp_key
-            )
+            helper = TokenHelper(self.sp_dc, self.sp_key)
+            self._access_token_web, self._token_expires_web = run_coroutine_threadsafe(
+                helper.start_session(), self.hass.loop
+            ).result()
+            # self._access_token_web, self._token_expires_web = st.start_session(
+            #     self.sp_dc, self.sp_key
+            # )
+            _LOGGER.info("Token: " + self._access_token_web)
         except TooManyRedirects:
             _LOGGER.error("Could not get spotify token. sp_dc and sp_key could be expired. Please update in config.")
             raise HomeAssistantError("Expired sp_dc, sp_key")
         except:  # noqa: E722
             raise HomeAssistantError("Could not get spotify token.")
-
 
 class SpotcastController:
 
