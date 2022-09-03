@@ -20,23 +20,24 @@ TYPE_ADD_USER = "addUser"
 TYPE_ADD_USER_RESPONSE = "addUserResponse"
 TYPE_ADD_USER_ERROR = "addUserError"
 
+
 # pylint: disable=too-many-instance-attributes
 class SpotifyController(BaseController):
     """Controller to interact with Spotify namespace."""
 
     def __init__(self, access_token=None, expires=None):
-        self.logger = logging.getLogger(__name__)
-        self.logger.info("Creating SpotifyController instance")
         super(SpotifyController, self).__init__(APP_NAMESPACE, APP_SPOTIFY)
 
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Creating SpotifyController instance")
         self.session_started = False
         self.access_token = access_token
-        # self.access_token_web = access_token_web
         self.expires = expires
         self.is_launched = False
         self.device = None
         self.credential_error = False
         self.waiting = threading.Event()
+        self.logger.info("Created SpotifyController instance")
 
     def receive_message(self, _message, data: dict):
         """
@@ -54,9 +55,6 @@ class SpotifyController(BaseController):
             self.logger.info("Got getInfoResponse message")
             self.device = data["payload"]["deviceID"]
             self.client = data["payload"]["clientID"]
-            # See https://github.com/librespot-org/librespot-java/blob/59c4cfccd75b1e596f5e93e57dcae72afad110c7/core/src/main/java/xyz/gianlu/librespot/mercury/MercuryRequests.java#L23
-            # self.client = "65b708073fc0480ea92a077233ca87bd"
-            self.client = "3dc9201a071445aa9389f9ebff3367e4"
             self.logger.info("Preparing post to Spotify")
             headers = {
                 'authority': 'spclient.wg.spotify.com',

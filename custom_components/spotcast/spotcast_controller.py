@@ -17,7 +17,7 @@ from homeassistant.components.cast.helpers import ChromeCastZeroconf
 from homeassistant.exceptions import HomeAssistantError
 
 from .spotify_controller import SpotifyController
-from .const import CONF_SP_DC, CONF_SP_KEY
+from .const import CONF_SP_DC, CONF_SP_KEY, DOMAIN
 from .helpers import get_cast_devices, get_spotify_devices
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,7 +33,6 @@ class SpotifyCastDevice:
         """Initialize a spotify cast device."""
         self.hass = hass
 
-        _LOGGER.info("Creating Cast Device")
         # Get device name from either device_name or entity_id
         device_name = None
         if call_device_name is None:
@@ -54,16 +53,15 @@ class SpotifyCastDevice:
             raise HomeAssistantError("device_name is empty")
 
         # Find chromecast device
-        _LOGGER.info("Getting Chromecast Device")
         self.castDevice = self.getChromecastDevice(device_name)
-        _LOGGER.info("Found cast device: %s", self.castDevice)
+        _LOGGER.debug("Found cast device: %s", self.castDevice)
         self.castDevice.wait()
 
     def getChromecastDevice(self, device_name: str) -> None:
         # Get cast from discovered devices of cast platform
         known_devices = get_cast_devices(self.hass)
 
-        _LOGGER.info("Chromecast devices: %s", known_devices)
+        _LOGGER.debug("Chromecast devices: %s", known_devices)
         cast_info = next(
             (
                 castinfo
@@ -72,7 +70,7 @@ class SpotifyCastDevice:
             ),
             None,
         )
-        _LOGGER.info("cast info: %s", cast_info)
+        _LOGGER.debug("cast info: %s", cast_info)
         if cast_info:
             return pychromecast.get_chromecast_from_cast_info(
                 cast_info.cast_info, ChromeCastZeroconf.get_zeroconf()
@@ -87,10 +85,13 @@ class SpotifyCastDevice:
 
     def startSpotifyController(self, access_token: str, access_token_web: str, expires: int) -> None:
         sp = SpotifyController(access_token, expires)
+        # sp = SpotifyController(access_token_web, expires)
         self.castDevice.register_handler(sp)
         _LOGGER.info("Added SpotifyController as handler for castDevice")
-        # See https://github.com/home-assistant-libs/pychromecast for how to get info and stuff
+        # See https://github.com/home-assistant-libs/pychromecast for how to get info and stuff (not sure if it is helpful)
+        _LOGGER.info("Launching app")
         sp.launch_app()
+        _LOGGER.info("App launched")
 
         if not sp.is_launched and not sp.credential_error:
             raise HomeAssistantError(
@@ -105,7 +106,7 @@ class SpotifyCastDevice:
 
     def getSpotifyDeviceId(self, devices_available: dict) -> None:
         # Look for device to make sure we can start playback
-        _LOGGER.info(
+        _LOGGER.debug(
             "devices_available: %s %s", devices_available, self.spotifyController.device
         )
         if devices := devices_available["devices"]:
@@ -137,7 +138,8 @@ class SpotifyToken:
         self.hass = hass
         self.sp_dc = sp_dc
         self.sp_key = sp_key
-        self.session = hass.data["spotcast"]["DataObject"].session
+        _LOGGER.info("Reading session from hass data")
+        self.session = hass.data[DOMAIN]["session"]
 
     def ensure_token_valid(self) -> bool:
         if not self.session.valid_token:
@@ -191,9 +193,6 @@ class SpotcastController:
     hass = None
 
     def __init__(self, hass: ha_core.HomeAssistant, sp_dc: str, sp_key: str, accs: collections.OrderedDict) -> None:
-        tmp = hass.states.get("media_player.spotify_gramatus")
-        _LOGGER.info("Spotify state data")
-        _LOGGER.info(tmp)
         if accs:
             self.accounts = accs
         self.accounts["default"] = OrderedDict([("sp_dc", sp_dc), ("sp_key", sp_key)])
@@ -206,7 +205,7 @@ class SpotcastController:
         dc = self.accounts.get(account).get(CONF_SP_DC)
         key = self.accounts.get(account).get(CONF_SP_KEY)
 
-        _LOGGER.info("setting up with  account %s", account)
+        _LOGGER.debug("setting up with  account %s", account)
         if account not in self.spotifyTokenInstances:
             self.spotifyTokenInstances[account] = SpotifyToken(self.hass, dc, key)
         return self.spotifyTokenInstances[account]
@@ -226,28 +225,22 @@ class SpotcastController:
         # login as real browser to get powerful token
         instance = self.get_token_instance(account)
         # get the spotify web api client
-        _LOGGER.info("Creating client")
         client = spotipy.Spotify(auth=instance.access_token)
-        _LOGGER.info("Done")
         # first, rely on spotify id given in config
         if not spotify_device_id:
             # if not present, check if there's a spotify connect device with that name
-            _LOGGER.info("Checking Connect Device Id")
             spotify_device_id = self._getSpotifyConnectDeviceId(client, device_name)
-            _LOGGER.info("Done")
         if not spotify_device_id:
             # if still no id available, check cast devices and launch the app on chromecast
-            _LOGGER.info("Checking cast devices")
             spotify_cast_device = SpotifyCastDevice(
                 self.hass,
                 device_name,
                 entity_id,
             )
-            _LOGGER.info("Got SpotifyCastDevice")
             me_resp = client._get("me")
             _LOGGER.info("Starting controller")
             spotify_cast_device.startSpotifyController(instance.access_token, instance.access_token_web, instance.expires_web)
-            _LOGGER.info("Done")
+            _LOGGER.info("Controller started")
             # Make sure it is started
             spotify_device_id = spotify_cast_device.getSpotifyDeviceId(
                 get_spotify_devices(self.hass, me_resp["id"])
@@ -265,7 +258,7 @@ class SpotcastController:
         ignore_fully_played:str,
         country_code:str=None
     ) -> None:
-        _LOGGER.info(
+        _LOGGER.debug(
             "Playing URI: %s on device-id: %s",
             uri,
             spotify_device_id,
@@ -283,21 +276,21 @@ class SpotcastController:
                     episode_uri = show_episodes_info["items"][0]["external_urls"][
                         "spotify"
                     ]
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Playing episode using uris (latest podcast playlist)= for uri: %s",
                     episode_uri,
                 )
                 client.start_playback(device_id=spotify_device_id, uris=[episode_uri])
         elif uri.find("episode") > 0:
-            _LOGGER.info("Playing episode using uris= for uri: %s", uri)
+            _LOGGER.debug("Playing episode using uris= for uri: %s", uri)
             client.start_playback(device_id=spotify_device_id, uris=[uri])
 
         elif uri.find("track") > 0:
-            _LOGGER.info("Playing track using uris= for uri: %s", uri)
+            _LOGGER.debug("Playing track using uris= for uri: %s", uri)
             client.start_playback(device_id=spotify_device_id, uris=[uri])
         else:
             if uri == "random":
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Cool, you found the easter egg with playing a random playlist"
                 )
                 playlists = client.user_playlists("me", 50)
@@ -312,10 +305,10 @@ class SpotcastController:
                 elif uri.find("playlist") > 0:
                     results = client.playlist_tracks(uri)
                     position = random.randint(0, results["total"] - 1)
-                _LOGGER.info("Start playback at random position: %s", position)
+                _LOGGER.debug("Start playback at random position: %s", position)
             if uri.find("artist") < 1:
                 kwargs["offset"] = {"position": position}
-            _LOGGER.info(
+            _LOGGER.debug(
                 'Playing context uri using context_uri for uri: "%s" (random_song: %s)',
                 uri,
                 random_song,

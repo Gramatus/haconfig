@@ -20,30 +20,23 @@ _LOGGER = logging.getLogger(__name__)
 
 def get_spotify_devices(hass, spotify_user_id):
     platforms = entity_platform.async_get_platforms(hass, "spotify")
-    _LOGGER.info("platforms:")
-    _LOGGER.info(platforms)
     spotify_media_player = None
     for platform in platforms:
         if platform.domain != "media_player":
             continue
 
-        # _LOGGER.info("Found plattform:")
-        # _LOGGER.info(platform)
         for entity in platform.entities.values():
-            # _LOGGER.info("Checking entity:")
-            # _LOGGER.info(entity)
             if (
                 isinstance(entity, SpotifyMediaPlayer)
                 and entity.unique_id == spotify_user_id
             ):
-                # _LOGGER.info("Found entity match:")
 
                 try:
                     entity_devices = entity._devices
                 except(AttributeError):
                     entity_devices = entity.data.devices.data
 
-                _LOGGER.info(f"get_spotify_devices: {entity.entity_id}: {entity.name}: %s", entity_devices)
+                _LOGGER.debug(f"get_spotify_devices: {entity.entity_id}: {entity.name}: %s", entity_devices)
                 spotify_media_player = entity
                 break
 
@@ -54,7 +47,7 @@ def get_spotify_devices(hass, spotify_user_id):
         except(AttributeError):
             resp = spotify_media_player.data.client.devices()
 
-        _LOGGER.info("get_spotify_devices: %s", resp)
+        _LOGGER.debug("get_spotify_devices: %s", resp)
         
         return resp
 
