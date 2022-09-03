@@ -83,9 +83,9 @@ class SpotifyCastDevice:
             "Could not find device with name {}".format(device_name)
         )
 
-    def startSpotifyController(self, access_token: str, access_token_web: str, expires: int) -> None:
+    def startSpotifyController(self, access_token: str, expires: int, access_token_web: str, expires_web: int) -> None:
         sp = SpotifyController(access_token, expires)
-        # sp = SpotifyController(access_token_web, expires)
+        # sp = SpotifyController(access_token_web, expires_web)
         self.castDevice.register_handler(sp)
         _LOGGER.info("Added SpotifyController as handler for castDevice")
         # See https://github.com/home-assistant-libs/pychromecast for how to get info and stuff (not sure if it is helpful)
@@ -136,10 +136,10 @@ class SpotifyToken:
 
     def __init__(self, hass: ha_core.HomeAssistant, sp_dc: str, sp_key: str) -> None:
         self.hass = hass
-        self.sp_dc = sp_dc
-        self.sp_key = sp_key
         _LOGGER.info("Reading session from hass data")
         self.session = hass.data[DOMAIN]["session"]
+        self.sp_dc = sp_dc
+        self.sp_key = sp_key
 
     def ensure_token_valid(self) -> bool:
         if not self.session.valid_token:
@@ -150,7 +150,7 @@ class SpotifyToken:
     def ensure_token_valid_web(self) -> bool:
         if float(self._token_expires_web) > time.time():
             return True
-        self.get_spotify_token()
+        self.get_spotify_token_web()
 
     @property
     def access_token(self) -> str:
@@ -160,7 +160,7 @@ class SpotifyToken:
 
     @property
     def expires(self) -> str:
-        return self.session.token["expires_at"]
+        return self.session.token["expires_at"] - int(time.time())
 
     @property
     def access_token_web(self) -> str:
@@ -170,15 +170,13 @@ class SpotifyToken:
 
     @property
     def expires_web(self) -> str:
-        return self._token_expires_web
+        return self._token_expires_web - int(time.time())
 
-    def get_spotify_token(self) -> tuple[str, int]:
+    def get_spotify_token_web(self) -> tuple[str, int]:
         try:
             self._access_token_web, self._token_expires_web = st.start_session(
                 self.sp_dc, self.sp_key
             )
-            expires = self._token_expires_web - int(time.time())
-            return self._access_token_web, expires
         except TooManyRedirects:
             _LOGGER.error("Could not get spotify token. sp_dc and sp_key could be expired. Please update in config.")
             raise HomeAssistantError("Expired sp_dc, sp_key")
@@ -239,7 +237,7 @@ class SpotcastController:
             )
             me_resp = client._get("me")
             _LOGGER.info("Starting controller")
-            spotify_cast_device.startSpotifyController(instance.access_token, instance.access_token_web, instance.expires_web)
+            spotify_cast_device.startSpotifyController(instance.access_token, instance.expires, instance.access_token_web, instance.expires_web)
             _LOGGER.info("Controller started")
             # Make sure it is started
             spotify_device_id = spotify_cast_device.getSpotifyDeviceId(
