@@ -4,6 +4,7 @@ import collections
 import logging
 import random
 import time
+from asyncio import run_coroutine_threadsafe
 from requests import TooManyRedirects
 from collections import OrderedDict
 from datetime import datetime
@@ -32,6 +33,7 @@ class SpotifyCastDevice:
         """Initialize a spotify cast device."""
         self.hass = hass
 
+        _LOGGER.info("Creating Cast Device")
         # Get device name from either device_name or entity_id
         device_name = None
         if call_device_name is None:
@@ -52,15 +54,16 @@ class SpotifyCastDevice:
             raise HomeAssistantError("device_name is empty")
 
         # Find chromecast device
+        _LOGGER.info("Getting Chromecast Device")
         self.castDevice = self.getChromecastDevice(device_name)
-        _LOGGER.debug("Found cast device: %s", self.castDevice)
+        _LOGGER.info("Found cast device: %s", self.castDevice)
         self.castDevice.wait()
 
     def getChromecastDevice(self, device_name: str) -> None:
         # Get cast from discovered devices of cast platform
         known_devices = get_cast_devices(self.hass)
 
-        _LOGGER.debug("Chromecast devices: %s", known_devices)
+        _LOGGER.info("Chromecast devices: %s", known_devices)
         cast_info = next(
             (
                 castinfo
@@ -69,7 +72,7 @@ class SpotifyCastDevice:
             ),
             None,
         )
-        _LOGGER.debug("cast info: %s", cast_info)
+        _LOGGER.info("cast info: %s", cast_info)
         if cast_info:
             return pychromecast.get_chromecast_from_cast_info(
                 cast_info.cast_info, ChromeCastZeroconf.get_zeroconf()
@@ -82,9 +85,11 @@ class SpotifyCastDevice:
             "Could not find device with name {}".format(device_name)
         )
 
-    def startSpotifyController(self, access_token: str, expires: int) -> None:
+    def startSpotifyController(self, access_token: str, access_token_web: str, expires: int) -> None:
         sp = SpotifyController(access_token, expires)
         self.castDevice.register_handler(sp)
+        _LOGGER.info("Added SpotifyController as handler for castDevice")
+        # See https://github.com/home-assistant-libs/pychromecast for how to get info and stuff
         sp.launch_app()
 
         if not sp.is_launched and not sp.credential_error:
@@ -100,7 +105,7 @@ class SpotifyCastDevice:
 
     def getSpotifyDeviceId(self, devices_available: dict) -> None:
         # Look for device to make sure we can start playback
-        _LOGGER.debug(
+        _LOGGER.info(
             "devices_available: %s %s", devices_available, self.spotifyController.device
         )
         if devices := devices_available["devices"]:
@@ -123,31 +128,55 @@ class SpotifyToken:
 
     sp_dc = None
     sp_key = None
-    _access_token = None
-    _token_expires = 0
+    hass = None
+    session = None
+    _access_token_web = None
+    _token_expires_web = 0
 
-    def __init__(self, sp_dc: str, sp_key: str) -> None:
+    def __init__(self, hass: ha_core.HomeAssistant, sp_dc: str, sp_key: str) -> None:
+        self.hass = hass
         self.sp_dc = sp_dc
         self.sp_key = sp_key
+        self.session = hass.data["spotcast"]["DataObject"].session
 
     def ensure_token_valid(self) -> bool:
-        if float(self._token_expires) > time.time():
+        if not self.session.valid_token:
+            run_coroutine_threadsafe(
+                self.session.async_ensure_token_valid(), self.hass.loop
+            ).result()
+
+    def ensure_token_valid_web(self) -> bool:
+        if float(self._token_expires_web) > time.time():
             return True
         self.get_spotify_token()
 
     @property
     def access_token(self) -> str:
         self.ensure_token_valid()
-        _LOGGER.debug("expires: %s time: %s", self._token_expires, time.time())
-        return self._access_token
+        _LOGGER.info("expires: %s time: %s", self.session.token["expires_at"], time.time())
+        return self.session.token["access_token"]
+
+    @property
+    def expires(self) -> str:
+        return self.session.token["expires_at"]
+
+    @property
+    def access_token_web(self) -> str:
+        self.ensure_token_valid_web()
+        _LOGGER.debug("expires: %s time: %s", self._token_expires_web, time.time())
+        return self._access_token_web
+
+    @property
+    def expires_web(self) -> str:
+        return self._token_expires_web
 
     def get_spotify_token(self) -> tuple[str, int]:
         try:
-            self._access_token, self._token_expires = st.start_session(
+            self._access_token_web, self._token_expires_web = st.start_session(
                 self.sp_dc, self.sp_key
             )
-            expires = self._token_expires - int(time.time())
-            return self._access_token, expires
+            expires = self._token_expires_web - int(time.time())
+            return self._access_token_web, expires
         except TooManyRedirects:
             _LOGGER.error("Could not get spotify token. sp_dc and sp_key could be expired. Please update in config.")
             raise HomeAssistantError("Expired sp_dc, sp_key")
@@ -162,6 +191,9 @@ class SpotcastController:
     hass = None
 
     def __init__(self, hass: ha_core.HomeAssistant, sp_dc: str, sp_key: str, accs: collections.OrderedDict) -> None:
+        tmp = hass.states.get("media_player.spotify_gramatus")
+        _LOGGER.info("Spotify state data")
+        _LOGGER.info(tmp)
         if accs:
             self.accounts = accs
         self.accounts["default"] = OrderedDict([("sp_dc", sp_dc), ("sp_key", sp_key)])
@@ -174,9 +206,9 @@ class SpotcastController:
         dc = self.accounts.get(account).get(CONF_SP_DC)
         key = self.accounts.get(account).get(CONF_SP_KEY)
 
-        _LOGGER.debug("setting up with  account %s", account)
+        _LOGGER.info("setting up with  account %s", account)
         if account not in self.spotifyTokenInstances:
-            self.spotifyTokenInstances[account] = SpotifyToken(dc, key)
+            self.spotifyTokenInstances[account] = SpotifyToken(self.hass, dc, key)
         return self.spotifyTokenInstances[account]
 
     def get_spotify_client(self, account: str) -> spotipy.Spotify:
@@ -190,27 +222,37 @@ class SpotcastController:
         return None
 
     def get_spotify_device_id(self, account, spotify_device_id, device_name, entity_id):
+        _LOGGER.info("Running get_spotify_device_id")
         # login as real browser to get powerful token
-        access_token, expires = self.get_token_instance(account).get_spotify_token()
+        instance = self.get_token_instance(account)
         # get the spotify web api client
-        client = spotipy.Spotify(auth=access_token)
+        _LOGGER.info("Creating client")
+        client = spotipy.Spotify(auth=instance.access_token)
+        _LOGGER.info("Done")
         # first, rely on spotify id given in config
         if not spotify_device_id:
             # if not present, check if there's a spotify connect device with that name
+            _LOGGER.info("Checking Connect Device Id")
             spotify_device_id = self._getSpotifyConnectDeviceId(client, device_name)
+            _LOGGER.info("Done")
         if not spotify_device_id:
             # if still no id available, check cast devices and launch the app on chromecast
+            _LOGGER.info("Checking cast devices")
             spotify_cast_device = SpotifyCastDevice(
                 self.hass,
                 device_name,
                 entity_id,
             )
+            _LOGGER.info("Got SpotifyCastDevice")
             me_resp = client._get("me")
-            spotify_cast_device.startSpotifyController(access_token, expires)
+            _LOGGER.info("Starting controller")
+            spotify_cast_device.startSpotifyController(instance.access_token, instance.access_token_web, instance.expires_web)
+            _LOGGER.info("Done")
             # Make sure it is started
             spotify_device_id = spotify_cast_device.getSpotifyDeviceId(
                 get_spotify_devices(self.hass, me_resp["id"])
             )
+        _LOGGER.info("Finished get_spotify_device_id")
         return spotify_device_id
 
     def play(
@@ -223,7 +265,7 @@ class SpotcastController:
         ignore_fully_played:str,
         country_code:str=None
     ) -> None:
-        _LOGGER.debug(
+        _LOGGER.info(
             "Playing URI: %s on device-id: %s",
             uri,
             spotify_device_id,
@@ -241,21 +283,21 @@ class SpotcastController:
                     episode_uri = show_episodes_info["items"][0]["external_urls"][
                         "spotify"
                     ]
-                _LOGGER.debug(
+                _LOGGER.info(
                     "Playing episode using uris (latest podcast playlist)= for uri: %s",
                     episode_uri,
                 )
                 client.start_playback(device_id=spotify_device_id, uris=[episode_uri])
         elif uri.find("episode") > 0:
-            _LOGGER.debug("Playing episode using uris= for uri: %s", uri)
+            _LOGGER.info("Playing episode using uris= for uri: %s", uri)
             client.start_playback(device_id=spotify_device_id, uris=[uri])
 
         elif uri.find("track") > 0:
-            _LOGGER.debug("Playing track using uris= for uri: %s", uri)
+            _LOGGER.info("Playing track using uris= for uri: %s", uri)
             client.start_playback(device_id=spotify_device_id, uris=[uri])
         else:
             if uri == "random":
-                _LOGGER.debug(
+                _LOGGER.info(
                     "Cool, you found the easter egg with playing a random playlist"
                 )
                 playlists = client.user_playlists("me", 50)
@@ -270,10 +312,10 @@ class SpotcastController:
                 elif uri.find("playlist") > 0:
                     results = client.playlist_tracks(uri)
                     position = random.randint(0, results["total"] - 1)
-                _LOGGER.debug("Start playback at random position: %s", position)
+                _LOGGER.info("Start playback at random position: %s", position)
             if uri.find("artist") < 1:
                 kwargs["offset"] = {"position": position}
-            _LOGGER.debug(
+            _LOGGER.info(
                 'Playing context uri using context_uri for uri: "%s" (random_song: %s)',
                 uri,
                 random_song,
