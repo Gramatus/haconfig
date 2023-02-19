@@ -484,8 +484,8 @@ state.persist(state_prefix+"_fastelys_kveld","off",{
 def update_room_entities():
     ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S%z").timestamp()
     if ha_uptime_seconds < 5*60:
-        _LOGGER.info("Started to update room entities - waiting 60 seconds")
-        asyncio.sleep(60)
+        _LOGGER.info("Started to update room entities - waiting 30 seconds")
+        asyncio.sleep(30)
     else:
         _LOGGER.info("Started to update room entities")
     all_rooms = list()
