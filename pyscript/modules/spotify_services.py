@@ -9,6 +9,7 @@ import random
 import urllib
 import database_services
 import math
+import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,13 +35,32 @@ sp_key = pyscript.config["sp_key"]
 async def get_spotify_token():
     try:
         global token, token_expires
-        token, token_expires = task.executor(st.start_session, sp_dc, sp_key)
+        tmp = await spotcast.reset_token()
+        log.info("Sleeping for five seconds since await seems to fail here")
+        await asyncio.sleep(5)
+        session = hass.data["spotcast"]["session"]
+        token = session.token["access_token"]
+        token_expires = session.token["expires_at"]
+        # _LOGGER.info("Scopes for token: " + session.token["scope"])
         expires = token_expires - int(time.time())
-        _LOGGER.info("Got an updated token, it will expire in: " + str(datetime.timedelta(seconds=expires)))
+        _LOGGER.info("Got an updated token from Spotcast, it will expire in: " + str(datetime.timedelta(seconds=expires)))
         state.setattr("pyscript.temp_token.token", token)
         state.setattr("pyscript.temp_token.expires", token_expires)
+        return token
     except:
         raise HomeAssistantError("Could not get spotify token")
+
+# async def get_spotify_token_web():
+#     try:
+#         global token, token_expires
+#         token, token_expires = task.executor(st.start_session, sp_dc, sp_key)
+#         expires = token_expires - int(time.time())
+#         _LOGGER.info("Got an updated token, it will expire in: " + str(datetime.timedelta(seconds=expires)))
+#         state.setattr("pyscript.temp_token.token_web", token)
+#         state.setattr("pyscript.temp_token.expires_web", token_expires)
+#         return token
+#     except:
+#         raise HomeAssistantError("Could not get spotify token")
 
 async def ensure_token_valid():
     if float(token_expires) > time.time():

@@ -3,6 +3,18 @@ from homeassistant.helpers import entity_platform
 import asyncio
 import spotify_services
 import database_services
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+from homeassistant.helpers.config_entry_oauth2_flow import (
+    OAuth2Session,
+    async_get_config_entry_implementation,
+)
+from datetime import datetime
+import aiohttp
+import requests
+import json
+
+# implementation = await async_get_config_entry_implementation(hass, entry)
 
 # Purpose of this script: playing podcast episodes from HA.
 # This cannot be done with the normal spotify integration (I think), so I need to use spotcast - but I need to play it on whatever is already the active entity...
@@ -297,10 +309,85 @@ name: Spotify test code
     # spotify_services.update_recently_played()
     # spotify_services.skip_track()
     # spotify_services.truncate_playlist("4ApT3pCnGOorgTvL1afzRz")
-    json = spotify_services.spotify_get("/tracks/3sAGP8416ReDw0Cy1aXw4R", True, ReturnRaw=True)
-    log.info(json)
-    json = spotify_services.spotify_get("/tracks/0PEzqFe5Mc8fLJSa8JLOsq", True, ReturnRaw=True)
-    log.info(json)
+    # json = spotify_services.spotify_get("/tracks/3sAGP8416ReDw0Cy1aXw4R", True, ReturnRaw=True)
+    # log.info(json)
+    # json = spotify_services.spotify_get("/tracks/0PEzqFe5Mc8fLJSa8JLOsq", True, ReturnRaw=True)
+    # log.info(json)
+    #scope = "user-library-read"
+    #sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
+    # test_request()
+    data = spotify_services.spotify_get("/me/player/currently-playing", ReturnRaw=True)
+    log.info(data)
+    # log.info(data)
+    #[entry.entry_id]
+    # alt_token = state.getattr("media_player.spotify_gramatus")["media_content_id"]
+    # log.info("Using alt token")
+    # log.info(alt_token)
+    # token = spotipy.util.prompt_for_user_token(scope="user-library-read",client_id="3dc9201a071445aa9389f9ebff3367e4",client_secret="2ac13db545af4e62bfd0f1ca50a6a57b",redirect_uri="http://homeassistant.local:4430/spotipy")
+    # _LOGGER.info(token)
+
+async def test_request():
+    # access_token, expiration_date = spotify_token_gramatus.start_session(pyscript.config["sp_dc"], pyscript.config["sp_key"])
+    # access_token, expiration_date = asyncio.run_coroutine_threadsafe(
+    #     spotify_token_gramatus.start_session(pyscript.config["sp_dc"], pyscript.config["sp_key"]),
+    #     hass.loop
+    # ).result()
+
+    # log.info(access_token)
+    # log.info(expiration_date)
+    return
+
+    # session = hass.data["spotcast"]["session"]
+    # access_token = session.token["access_token"]
+    # refresh_token = session.token["refresh_token"]
+    # scope = session.token["scope"]
+    # log.info(scope)
+    # access_token_web = spotify_services.get_spotify_token_web()
+    # log.info(session.token)
+    # return
+    log.info("Preparing post to Spotify")
+    headers = {
+        # 'authority': 'spclient.wg.spotify.com',
+        'authorization': 'Bearer {}'.format(access_token),
+        # "authorization": "Bearer BQD3QyQVwK2Id19SHaUSqe22anNSklHbdPDzsp7oeTdr0Uo7u225lX29RAZmL6vTgPbjX0C1iQzs2-mDtxrtBpfVMGazbJLR5AUP06d9NYk1VtEOsK13LkHNLg42dSECP7L0sWj36DbPfH76awT_AI2iWI4Z7llsIAAVY0ZLVfPTNWDukR--kJdJvRSWLAWge7WtaZJCxh9gU_JEtJ6g6JQgUjmdKTKMWsAICC2y1dfVvkt7iXU517zV5vI4-JBl7uM0JzM29p65fZKBm98mzwsJo8W70swi8JYEvFhAyejWqD9BKiUVVswm2OBPL2f78vKEEQ",
+        # "client-token": "AAB1mm9CZz2JQlVryedmZMw9uOu3XCiKSHxAucQht/Zdr9FlX5JUfLCdRvXDa1TY/b/FWcLs0hR9eZOqatrUUk4DFHrzwCAKbpLaZhCoe/k/CiC8y9KurCtwAvc0TjPHf7xhu+f3zP1mT86MnB61wsG1564ZnyEJWq/zjnLU+9IHE68fRX2BFZov3bDSZTV5xhdVGvjPcFdg/bCKQWeAALO38tpA/aLL7BVBZEP3Sa/3J6w7WNMhDDvX9K/VC9qhga+vJA5yNVI6eS/+bQPBEP4ATk+aRcUmZNroCMcbaJwXxA==",
+        'content-type': 'text/plain;charset=UTF-8'
+    }
+    log.info("headers:")
+    log.info(headers)
+    # request_body = '{"clientId": "65b708073fc0480ea92a077233ca87bd", "deviceId": "3507bfaa362995ba4e00618054ca0d9d"}'
+    request_body = '{"clientId": "d7df0887fb71494ea994202cb473eae7", "deviceId": "3507bfaa362995ba4e00618054ca0d9d"}'
+    # request_body = '{"deviceId": "3507bfaa362995ba4e00618054ca0d9d"}'
+    log.info("body:")
+    log.info(request_body)
+    # response = requests.post('https://spclient.wg.spotify.com/device-auth/v1/refresh', headers=headers, data=request_body)
+    try:
+        async with aiohttp.ClientSession() as session:
+            # encoded_url = URL(full_url,encoded=True)
+            async with session.post('https://spclient.wg.spotify.com/device-auth/v1/refresh', data=request_body, allow_redirects=False, headers=headers) as response:
+                log.info("Got response")
+                log.info(response)
+                log.info("Response status: " + str(response.status))
+                if(response.status == 401):
+                    log.error("401 response from spotify")
+                    return False
+                if(response.status != 200):
+                    log.info("Did not get 200 response status")
+                    return False
+                # txt = response.text()
+                # log.info(txt)
+                json_resp = response.text()
+                if("error" in json_resp):
+                    log.error("Error response from spotify")
+                    log.info(json_resp["error"])
+                log.info("Response json:")
+                log.info(json_resp)
+                log.info(response.headers)
+                # WWW-Authenticate
+                if "WWW-Authenticate" in response.headers:
+                    log.info(response.headers["WWW-Authenticate"])
+    except Exception as e:
+        log.error("Error: " + str(e))
 
 @service
 def play_playlist_at_position(playlistid, position, shuffle=False):
