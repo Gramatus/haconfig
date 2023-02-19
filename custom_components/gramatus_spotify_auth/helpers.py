@@ -1,19 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import logging
-import requests
-import urllib
-import difflib
-import random
-from functools import partial, wraps
-
-from homeassistant.components.cast.media_player import CastDevice
-from homeassistant.components.spotify.media_player import SpotifyMediaPlayer
 from homeassistant.helpers import entity_platform
-
-# import for type inference
-import spotipy
 
 _LOGGER = logging.getLogger(__name__)
 

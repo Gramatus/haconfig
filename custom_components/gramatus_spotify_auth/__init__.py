@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import collections
 import logging
-import time
 import aiohttp
 import homeassistant
-from spotipy import Spotify
+# from spotipy import Spotify
 
-from homeassistant.components import websocket_api
-from homeassistant.core import callback
 import homeassistant.core as ha_core
 from homeassistant.helpers.config_entry_oauth2_flow import (
     OAuth2Session,
@@ -18,14 +15,14 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
 from .const import DOMAIN, SPOTIFY_SCOPES
 from .helpers import get_spotify_install_status
-from .auth_controller import GramatusAuthController
+# from .auth_controller import GramatusAuthController
 
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Gramatus Spotify Auth from a config entry."""
-    _LOGGER.info("Config entry data from Gramatus Spotify Auth")
-    _LOGGER.info(entry.data)
+    _LOGGER.debug("Config entry data from Gramatus Spotify Auth")
+    _LOGGER.debug(entry.data)
     implementation = await async_get_config_entry_implementation(hass, entry)
     session = OAuth2Session(hass, entry, implementation)
 
@@ -35,13 +32,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from err
 
     # spotify = Spotify(auth=session.token["access_token"])
-    _LOGGER.info("New Spotify token:" + session.token["access_token"])
-    _LOGGER.info("Scopes for token: " + session.token["scope"])
+    _LOGGER.debug("New Spotify token:" + session.token["access_token"])
+    _LOGGER.debug("Scopes for token: " + session.token["scope"])
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN]["session"] = session
     # hass.data[DOMAIN]["client"] = spotify
-    _LOGGER.info("Added session to hass data for " + domain)
+    _LOGGER.info("Added session to hass data for " + DOMAIN)
 
     if not set(session.token["scope"].split(" ")).issuperset(SPOTIFY_SCOPES):
         raise ConfigEntryAuthFailed
@@ -70,6 +67,8 @@ def setup(hass: ha_core.HomeAssistant, config: collections.OrderedDict) -> bool:
         if not hass.data[DOMAIN]["session"].valid_token:
             _LOGGER.info("Reloading token")
             await hass.data[DOMAIN]["session"].async_ensure_token_valid()
+        else:
+            _LOGGER.info("Token is still valid")
         _LOGGER.info("New expiry for token: " + str(hass.data[DOMAIN]["session"].token["expires_at"]) + ", token: " + hass.data[DOMAIN]["session"].token["access_token"])
 
     # async def get_token(call: ha_core.ServiceCall):

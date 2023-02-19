@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
-from homeassistant.components import websocket_api
-
 DOMAIN = "gramatus_spotify_auth"
 
 SPOTIFY_SCOPES = [
