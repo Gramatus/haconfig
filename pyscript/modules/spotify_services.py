@@ -343,6 +343,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
         tracks = []
         for item in items:
             track = item["track"]
+            # if("Hubba" not in track["name"]):
+            #     continue
             trackdata = {
                 "name": track["name"],
                 "uri":  track["uri"],
@@ -351,6 +353,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
                 "album": track["album"]["name"],
                 "track_identifier": track["name"] + "|" + track["album"]["name"] + "|" + track["artists"][0]["name"]
             }
+            # _LOGGER.info(trackdata)
+            # _LOGGER.info(track)
             if "linked_from" in track:
                 trackdata["uri"] = track["linked_from"]["uri"]
             if trackdata["market_uri"] in played_tracks_uri:
@@ -367,9 +371,12 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
             if trackdata["last_played"].timestamp() < 25*365*24*60*60:
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
             trackdata["original_last_played"] = trackdata["last_played"]
+            # _LOGGER.info("last_played: "+str(trackdata["last_played"]))
             tracks.append(trackdata)
         # Sort tracks by last played
         sorted_tracks = sorted(tracks, key=lambda i:i["last_played"], reverse=False)
+    # _LOGGER.info("Done")
+    # return
 
     # For tracks that haven't been played before, add a last_played value so things gets a bit more sorted. Before doing that, do a simple shuffle on the list to add some seed into "added order" stuff
     random.shuffle(sorted_tracks)
@@ -388,7 +395,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
     lowest_last_played_datetime = min(tracks_played_last_year, key=lambda x: x["last_played"])["last_played"]
     # else:
     #     lowest_last_played_datetime = min(sorted_tracks, key=lambda x: x["last_played"])["last_played"]
-    sorted_tracks = fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, True)
+    sorted_tracks = fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, False)
     # log.info(list(sorted_tracks)[0]["last_played"])
     # log.info(datetime.datetime.now() - datetime.timedelta(days=365))
     # log.info(list(sorted_tracks)[0]["last_played"].timestamp())
@@ -465,7 +472,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
     for group in groups:
         updated_group = group
         if fix_after_shuffle:
-            updated_group = fix_repeat_artist_album(updated_group, lowest_last_played_datetime, True)
+            updated_group = fix_repeat_artist_album(updated_group, lowest_last_played_datetime, False)
             _LOGGER.info("Group#" + str(group_num) + ": Updated after shuffling to avoid groupings of same artist/album")
         for track in group:
             shuffled_tracks.append(track)
