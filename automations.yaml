@@ -50,14 +50,22 @@
     event: sunrise
     offset: '-25'
   condition:
-  - condition: state
-    entity_id: input_boolean.alarm_aktiv
-    state: 'on'
-  - condition: sun
-    after: sunrise
-    after_offset: '-30'
-  - condition: time
-    after: input_datetime.vekking
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: input_boolean.alarm_aktiv
+      state: 'on'
+    - condition: time
+      after: input_datetime.vekking
+      before: 00:00:00
+    - condition: or
+      conditions:
+      - condition: sun
+        after: sunrise
+        after_offset: '-30'
+      - condition: state
+        entity_id: input_boolean.open_blinds_always
+        state: 'on'
   action:
   - device_id: f1b95e9bf965bb365b1cf27098557194
     domain: cover
