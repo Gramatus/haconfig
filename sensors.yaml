@@ -2,8 +2,8 @@
   scan_interval: 604800
 # - platform: gramatus
 # - platform: roomtoggles
-- platform: uptime
-  name: Oppetid HA
+# - platform: uptime
+#   name: Oppetid HA
 - platform: time_date
   display_options:
     - 'time'
