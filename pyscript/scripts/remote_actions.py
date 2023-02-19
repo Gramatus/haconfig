@@ -20,7 +20,8 @@ fields:
     trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
     trigger = re.compile("(<Event roku_command\[L\]:)([^>]*)(>)").sub('{\g<2>}',trigger)
     trigger = trigger.replace("'","\"")
-    log.debug(trigger)
+    trigger = trigger.replace("None","null")
+    # log.info(trigger)
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
     event = trigger_data["event"]
@@ -37,6 +38,8 @@ fields:
     if action == None:
         log.debug("Receieved a keypress that has no action connected to it")
         return
+    else:
+        log.info("Triggered action: " + action)
     if action == "Spill Alle Gromlåter":
         pyscript.play_playlist_random(playlistid="2pjB7wGkkoG9VYY8enMR5b", shuffle_type=shuffle_type)
     elif action == "Spill Kristne gromlåter":
