@@ -45,6 +45,7 @@ spotcast:
 
 pyscript: !include pyscript/config.yaml
 
+gramatus_fully:
 # roomtoggles:
 
 tellstick:

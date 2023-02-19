@@ -1,0 +1,10 @@
+{
+    "domain": "gramatus_fully",
+    "name": "Gramatus Fully setup",
+    "version": "0.0.1",
+    "documentation": "nope",
+    "dependencies": [],
+    "codeowners": [],
+    "requirements": [],
+    "iot_class": "calculated"
+  }

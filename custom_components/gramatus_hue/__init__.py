@@ -2,7 +2,7 @@
 import logging
 _LOGGER = logging.getLogger(__name__)
 
-GRAMATUS_DOMAIN = "gramatus"
+DOMAIN = "gramatus_hue"
 
 def setup(hass, config):
     """Set up is called when Home Assistant is loading our component."""
@@ -70,7 +70,7 @@ def setup(hass, config):
         """Handle the test."""
         _LOGGER.debug("Gramatus testing")
 
-    #hass.services.register(GRAMATUS_DOMAIN, "gramatus_test", handle_test)
+    #hass.services.register(DOMAIN, "gramatus_test", handle_test)
 
     # Return boolean to indicate that initialization was successful
     return True
