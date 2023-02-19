@@ -1,4 +1,3 @@
-
 # Configure a default setup of Home Assistant (frontend, api, etc)
 default_config:
 
@@ -46,7 +45,6 @@ spotcast:
 
 pyscript: !include pyscript/config.yaml
 
-gramatus:
 # roomtoggles:
 
 tellstick:
@@ -100,6 +98,7 @@ logger:
     homeassistant.components.automation.lysfade_fange_opp_at_lyset_blir_skrudd_av: warning
     homeassistant.components.automation.home_away_leave_home: warning
     homeassistant.components.automation.home_away_come_home: warning
+    gql.transport.websockets: warning
   filters:
     # Closing connection to hue bridge<
     aiohue.v1[192.168.50.52]:
