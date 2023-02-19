@@ -598,3 +598,20 @@
     data:
       thermostat: pyscript.thermostat_stue
   mode: single
+- id: '1669489259971'
+  alias: Skru av varme soverom 18:00
+  description: ''
+  trigger:
+  - platform: time
+    at: '18:00:00'
+  condition:
+  - condition: state
+    entity_id: climate.soverom
+    state: heat
+  action:
+  - device_id: 5dd8331be1641f1686ee64dccae75491
+    domain: climate
+    entity_id: climate.soverom
+    type: set_hvac_mode
+    hvac_mode: 'off'
+  mode: single
