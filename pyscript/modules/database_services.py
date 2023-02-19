@@ -226,6 +226,7 @@ def run_select_query(columns, table, prms=None):
         # Columns from TABLE_INFO: cid, name, type, notnull, dflt_value, pk
         if row["type"] == "DATETIME":
             datetime_rows.append(row["name"])
+    # _LOGGER.info("Running query: " + query)
     c.execute(query)
     data = []
     for row in c:

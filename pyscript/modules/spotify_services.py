@@ -307,19 +307,26 @@ def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResul
             break
     return sorted_tracks
 
-def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=True):
+def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=True, debug_log=False):
     # Get stored data on last played time for tracks
     base_data = database_services.run_select_query("[uri], [name], [album], [artist], MAX([played]) as [played]", "played_tracks_list", "GROUP BY [uri], [name], [album], [artist]")
+    _LOGGER.debug("Rows returned from database: " + str(len(base_data)))
     # _LOGGER.info(len(base_data))
     played_tracks_uri = {}
     played_tracks_identifier = {}
     played_tracks_name = {}
     for track in base_data:
+        if(track["uri"] in played_tracks_uri and played_tracks_uri[track["uri"]]["last_played"] > track["played"]):
+            continue
         played_tracks_uri[track["uri"]] = track
         played_tracks_uri[track["uri"]]["last_played"] = track["played"]
         track_identifier = track["name"] + "|" + track["album"] + "|" + track["artist"]
+        if(track_identifier in played_tracks_identifier and played_tracks_identifier[track_identifier]["last_played"] > track["played"]):
+            continue
         played_tracks_identifier[track_identifier] = track
         played_tracks_identifier[track_identifier]["last_played"] = track["played"]
+        if(track["name"] in played_tracks_name and played_tracks_name[track["name"]]["last_played"] > track["played"]):
+            continue
         played_tracks_name[track["name"]] = track
         played_tracks_name[track["name"]]["last_played"] = track["played"]
     use_cache = False
@@ -359,6 +366,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
             if trackdata["last_played"].timestamp() < 25*365*24*60*60:
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
+            trackdata["original_last_played"] = trackdata["last_played"]
             tracks.append(trackdata)
         # Sort tracks by last played
         sorted_tracks = sorted(tracks, key=lambda i:i["last_played"], reverse=False)
@@ -472,7 +480,8 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
     batch_size = 50
     _LOGGER.debug(" > Adding shuffled tracks to shadow playlist in batches of " + str(batch_size))
     for track in shuffled_tracks:
-        # _LOGGER.info(track["name"])
+        if debug_log:
+            _LOGGER.info("\t#" + str(count) + "\t" + track["name"] + "\toriginal_last_played:\t" + str(track["original_last_played"]) + "\tlast_played:\t" + str(track["last_played"]))
         count = count + 1
         uris.append(track["uri"])
         if len(uris) >= batch_size:
@@ -565,5 +574,7 @@ def ensure_shuffle_playlist_exists(playlistid):
 def ensure_shuffled_playlist(playlistid, consider_play_date=True):
     update_recently_played()
     shuffle_playlist_id, playlist_exists = ensure_shuffle_playlist_exists(playlistid)
-    update_shuffle_playlist(playlistid, shuffle_playlist_id, consider_play_date)
+    state.get("input_boolean.shuffle_debug")
+    debug_log = state.get("input_boolean.shuffle_debug") == "on"
+    update_shuffle_playlist(playlistid, shuffle_playlist_id, consider_play_date, debug_log)
     return shuffle_playlist_id
