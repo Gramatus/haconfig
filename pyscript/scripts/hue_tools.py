@@ -97,8 +97,7 @@ fields:
 @service
 def toggle_thermostat(thermostat):
     """yaml
-name: Toggle
-description: Turn on a Hue scene based on the scene ID (will use group 0 if no group is specified)
+name: Toggle thermostat
 fields:
     thermostat:
         description: Entity with settings for this thermostat
@@ -113,7 +112,44 @@ fields:
     current_temp = state.get(data["sensor_entity"])
     target_temp = state.get(data["target_entity"])
     target_state = "off" if current_temp > target_temp else "on"
-    log.debug("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
+    log.info("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
+    for switch in data["switches"]:
+        if target_state == "off":
+            light.turn_off(entity_id=switch)
+        else:
+            light.turn_on(entity_id=switch)
+    state.set(thermostat, target_state)
+
+@service
+def toggle_thermostat_hvac(thermostat):
+    """yaml
+name: Toggle thermostat (HVAC)
+fields:
+    thermostat:
+        description: Entity with settings for this thermostat
+        required: true
+        example: pyscript.thermostat_kontor
+        selector:
+            entity:
+                domain: pyscript
+                device_class: thermostat
+"""
+    log.info("Trigger HVAC thermostat")
+    data = state.getattr(thermostat)
+    current_temp = state.get(data["sensor_entity"])
+    # if data["sensor_entity"].count(".") == 1:
+    target_temp = state.get(data["target_entity"])
+    # if data["sensor_entity"].count(".") == 2:
+    #     target_temp = state.get(data["target_entity"])
+    diff = float(current_temp) - float(target_temp)
+    log.info("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Diff: " + str(diff))
+    if diff > 1:
+        log.info("Should not be this hot")
+    if diff < -1:
+        log.info("Should not be this cold")
+    return
+    target_state = "off" if current_temp > target_temp else "on"
+    log.info("Temperature: " + str(current_temp) + ", Target: " + str(target_temp) + ", Turning " + target_state + ": " + ",".join(data["switches"]))
     for switch in data["switches"]:
         if target_state == "off":
             light.turn_off(entity_id=switch)
