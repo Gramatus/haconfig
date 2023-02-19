@@ -569,3 +569,30 @@
     data:
       thermostat: pyscript.thermostat_kjokken
   mode: single
+- id: '1669482953523'
+  alias: Termostat stua
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.varmepumpe_stua_motion_sensor_temperature
+    above: 1
+    value_template: '{{ (states("sensor.varmepumpe_stua_motion_sensor_temperature")|float(default=20))
+      - (state_attr(''climate.varmepumpe_stua'', ''temperature'')|float(default=20))
+      }}'
+  - platform: numeric_state
+    entity_id: sensor.varmepumpe_stua_motion_sensor_temperature
+    below: '-1.00'
+    value_template: '{{ (states("sensor.varmepumpe_stua_motion_sensor_temperature")|float(default=20))
+      - (state_attr(''climate.varmepumpe_stua'', ''temperature'')|float(default=20))
+      }}'
+  - platform: time_pattern
+    hours: '*'
+    minutes: /15
+    seconds: '0'
+    id: backup
+  condition: []
+  action:
+  - service: pyscript.toggle_thermostat_hvac
+    data:
+      thermostat: pyscript.thermostat_stue
+  mode: single
