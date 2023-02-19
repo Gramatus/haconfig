@@ -92,7 +92,9 @@
       state: 'on'
   action:
   - service: pyscript.wakeup_alarm
+    data: {}
   - service: pyscript.ensure_alarm_active
+    data: {}
   mode: restart
 - id: '1631038106031'
   alias: 'Vekking: restart hvis musikken ikke er på'
@@ -180,7 +182,7 @@
       - (states("input_number.termostat_kontoret")|float(default=20)) }}'
   - platform: time_pattern
     hours: '*'
-    minutes: '15'
+    minutes: /15
     seconds: '0'
     id: backup
   condition: []
@@ -560,7 +562,7 @@
       - (states("input_number.termostat_kjokkenet")|float(default=20)) }}'
   - platform: time_pattern
     hours: '*'
-    minutes: '15'
+    minutes: /15
     seconds: '0'
     id: backup
   condition: []
