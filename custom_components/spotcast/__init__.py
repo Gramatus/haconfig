@@ -175,10 +175,14 @@ def setup(hass: ha_core.HomeAssistant, config: collections.OrderedDict) -> bool:
 
         connection.send_message(websocket_api.result_message(msg["id"], resp))
 
-    def reset_token(call: ha_core.ServiceCall):
+    async def reset_token(call: ha_core.ServiceCall):
         """service called."""
-        _LOGGER.info("Reloading token")
-        spotcast_controller.get_token_instance()
+        _LOGGER.info("Reloading token if needed")
+        if not hass.data[DOMAIN]["session"].valid_token:
+            _LOGGER.info("Reloading token")
+            await hass.data[DOMAIN]["session"].async_ensure_token_valid()
+        _LOGGER.info("New expiry for token: " + str(hass.data[DOMAIN]["session"].token["expires_at"]) + ", token: " + hass.data[DOMAIN]["session"].token["access_token"])
+        #spotcast_controller.get_token_instance()
 
 
     def start_casting(call: ha_core.ServiceCall):
