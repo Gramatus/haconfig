@@ -6,17 +6,21 @@ _LOGGER = logging.getLogger(__name__)
 def getMediaPlaySortKey(mediaPlayer, castDict):
     return ""
 
-def getPlayingEntity():
+def getPlayingEntity(lookfor="both"):
     castDevices = state.getattr("sensor.chromecast_devices")["devices"]
     castDict = {}
     for device in castDevices:
         castDict[device["name"]] = { "is_group": device["model_name"] == "Google Cast Group" }
     allMediaPlayers = []
     for mediaPlayerName in state.names(domain="media_player"):
-        deviceName = state.getattr(mediaPlayerName)["friendly_name"]
-        is_group = deviceName in castDict and castDict[deviceName]["is_group"]
-        sort_key = "0" + deviceName if is_group else "1" + deviceName
-        allMediaPlayers.append({ "entity_id": mediaPlayerName, "friendly_name": deviceName, "is_group": is_group, "sortKey": sort_key, "state": state.get(mediaPlayerName) })
+        player = state.getattr(mediaPlayerName)
+        if "friendly_name" in player:
+            deviceName = state.getattr(mediaPlayerName)["friendly_name"]
+            is_group = deviceName in castDict and castDict[deviceName]["is_group"]
+            sort_key = "0" + deviceName if is_group else "1" + deviceName
+            allMediaPlayers.append({ "entity_id": mediaPlayerName, "friendly_name": deviceName, "is_group": is_group, "sortKey": sort_key, "state": state.get(mediaPlayerName) })
+        else:
+            log.info(state.getattr(mediaPlayerName))
     allMediaPlayers = sorted(allMediaPlayers, key=lambda i:i["sortKey"], reverse=False)
     playingEntity = None
     pausedEntity = None
@@ -26,10 +30,10 @@ def getPlayingEntity():
             break
         elif mediaPlayer["state"] == "paused" and pausedEntity == None:
             pausedEntity = mediaPlayer
-    if playingEntity is not None:
+    if (lookfor=="both" or lookfor=="playing") and playingEntity is not None:
         _LOGGER.debug("Found playing entity: " + playingEntity["entity_id"])
         return playingEntity["entity_id"], playingEntity["state"]
-    elif pausedEntity is not None:
+    elif (lookfor=="both" or lookfor=="paused") and  pausedEntity is not None:
         _LOGGER.debug("Found paused entity: " + pausedEntity["entity_id"])
         return pausedEntity["entity_id"], pausedEntity["state"]
     else:

@@ -73,7 +73,7 @@ fields:
         log.info("Casting Home Assistant to KjøkkenNest")
         cast.show_lovelace_view(entity_id="media_player.kjokkennest", dashboard_path="kjokken-ga", view_path="default_view")
     elif action == "Play media":
-        playingEntity, playState = media_services.getPlayingEntity()
+        playingEntity, playState = media_services.getPlayingEntity("paused")
         if playingEntity is not None:
             if playState == "playing":
                 log.info("Pausing " + playingEntity)
@@ -82,7 +82,7 @@ fields:
                 log.info("Resuming " + playingEntity)
                 media_player.media_play(entity_id=playingEntity)
     elif action == "Pause media":
-        playingEntity, playState = media_services.getPlayingEntity()
+        playingEntity, playState = media_services.getPlayingEntity("playing")
         if playingEntity is not None:
             if playState == "playing":
                 log.info("Pausing " + playingEntity)
