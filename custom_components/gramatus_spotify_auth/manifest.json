@@ -1,0 +1,17 @@
+{
+  "domain": "gramatus_spotify_auth",
+  "name": "Gramatus Spotify Auth",
+  "documentation": "nope",
+  "iot_class": "cloud_polling",
+  "version": "v1.0.0",
+  "dependencies": [
+    "spotify",
+    "application_credentials"
+  ],
+  "after_dependencies": [
+    "cast",
+    "spotify"
+  ],
+  "codeowners": [],
+  "config_flow": true
+}

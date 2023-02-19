@@ -35,15 +35,15 @@ sp_key = pyscript.config["sp_key"]
 async def get_spotify_token():
     try:
         global token, token_expires
-        tmp = await spotcast.reset_token()
+        await gramatus_spotify_auth.reset_token()
         log.info("Sleeping for five seconds since await seems to fail here")
         await asyncio.sleep(5)
-        session = hass.data["spotcast"]["session"]
+        session = hass.data["gramatus_spotify_auth"]["session"]
         token = session.token["access_token"]
         token_expires = session.token["expires_at"]
         # _LOGGER.info("Scopes for token: " + session.token["scope"])
-        expires = token_expires - int(time.time())
-        _LOGGER.info("Got an updated token from Spotcast, it will expire in: " + str(datetime.timedelta(seconds=expires)))
+        expires_in_seconds = token_expires - int(time.time())
+        _LOGGER.info("Got an updated token from gramatus_spotify_auth, it will expire in: " + str(datetime.timedelta(seconds=expires_in_seconds)))
         state.setattr("pyscript.temp_token.token", token)
         state.setattr("pyscript.temp_token.expires", token_expires)
         return token

@@ -1,0 +1,2 @@
+reset_token:
+  description: Resets spotify token for Gramatus Spotify Auth
