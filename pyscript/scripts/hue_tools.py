@@ -16,7 +16,7 @@ state.persist("pyscript." + entity_prefix_thermo + "kontor", "off", {
     "icon": "mdi:thermostat-box",
     "device_class": "thermostat",
     "friendly_name": "Innstillinger for termostat på kontoret",
-    "sensor_entity": "sensor.kontoret_temperature",
+    "sensor_entity": "sensor.bad_temperature",
     "target_entity": "input_number.termostat_kontoret",
     "switches": [
         "light.varmeovn_kontoret"
@@ -30,6 +30,16 @@ state.persist("pyscript." + entity_prefix_thermo + "kjokken", "off", {
     "target_entity": "input_number.termostat_kjokkenet",
     "switches": [
         "light.varmeovn_kjokkenet"
+    ]
+})
+state.persist("pyscript." + entity_prefix_thermo + "stue", "off", {
+    "icon": "mdi:thermostat-box",
+    "device_class": "thermostat",
+    "friendly_name": "Innstillinger for termostat på stua",
+    "sensor_entity": "sensor.varmepumpe_stua_motion_sensor_temperature",
+    "target_entity": "climate.varmepumpe_stua.temperature",
+    "switches": [
+        "climate.varmepumpe_stua"
     ]
 })
 
