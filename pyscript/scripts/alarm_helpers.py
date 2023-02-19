@@ -159,10 +159,11 @@ description: Finish things in bedroom and prepare downstairs
 """
     log.info("Dismissing backup alarm")
     pyscript.fully_dismiss_alarm(device="fully.nettbrett1")
-    log.info("Turning back on HVAC with daytime settings")
-    climate.turn_on(entity_id="climate.soverom")
-    melcloud.set_vane_vertical(entity_id="climate.soverom",position="swing")
-    climate.set_temperature(entity_id="climate.soverom",temperature=16)
+    if state.get("input_boolean.ac_morning_activate") == "on":
+        log.info("Turning back on HVAC with daytime settings")
+        climate.turn_on(entity_id="climate.soverom")
+        melcloud.set_vane_vertical(entity_id="climate.soverom",position="swing")
+        climate.set_temperature(entity_id="climate.soverom",temperature=16)
     log.info("Turning off lights with a 120 second transition")
     light.turn_off(entity_id="light.soverom", transition=120)
     log.info("Changing wakeup active to off")
