@@ -93,9 +93,20 @@
       icon: 'mdi:alarm'
       friendly_name: 'Alarm nettbrett aktiv'
   - unique_id: huetrans_vekking_endtime_auto
-    state: "{{ (state_attr('input_datetime.vekking', 'timestamp') + (30*60))|timestamp_custom('%H:%M:%S', false) }}"
+    state: "{{ (states.sensor.vekking_for_lysfade.state|int(0) + (30*60))|timestamp_custom('%H:%M:%S', false) }}"
     attributes:
       friendly_name: 'LysFade: Slutt Vekking (beregnet)'
+      editable: "{{ false }}"
+      has_date: "{{ false }}"
+      has_time: "{{ true }}"
+      hour: "{{ ((states.sensor.vekking_for_lysfade.state|int(0) + (30*60))/(60*60))|int(0) % 24 }}"
+      minute: "{{ ((states.sensor.vekking_for_lysfade.state|int(0) + (30*60))/60)|int(0) % 60 }}"
+      second: "{{ (states.sensor.vekking_for_lysfade.state|int(0) + (30*60)) % 60 }}"
+      timestamp: "{{ (states.sensor.vekking_for_lysfade.state|int(0) + (30*60)) }}"
+  - unique_id: huetrans_vekking_endtime_auto_old
+    state: "{{ (state_attr('input_datetime.vekking', 'timestamp') + (30*60))|timestamp_custom('%H:%M:%S', false) }}"
+    attributes:
+      friendly_name: 'LysFade: Slutt Vekking (beregnet) - gammel beregning'
       editable: "{{ false }}"
       has_date: "{{ false }}"
       has_time: "{{ true }}"
@@ -103,6 +114,14 @@
       minute: "{{ ((state_attr('input_datetime.vekking', 'minute') + (state_attr('input_datetime.vekking', 'second')/60) + 30) % 60) | int }}"
       second: "{{ (state_attr('input_datetime.vekking', 'second') + (30*60)) % 60 }}"
       timestamp: "{{ (state_attr('input_datetime.vekking', 'timestamp') + (30*60)) }}"
+  - unique_id: vekking_timestamp
+    state: "{{ state_attr('input_datetime.vekking', 'timestamp') }}"
+    attributes:
+      friendly_name: 'Vekking: timestamp (beregnet)'
+  - unique_id: wakeup_lightfade_delay_timestamp
+    state: "{{ state_attr('input_datetime.wakeup_lightfade_delay', 'timestamp') }}"
+    attributes:
+      friendly_name: 'Vekking lysfade delay: timestamp (beregnet)'
   - unique_id: huetrans_hoved_arbeidslys_timestamp_helper
     state: >-
       {% set item_entity_id = 'pyscript.huetrans_hoved_arbeidslys' %}

@@ -77,8 +77,10 @@
   alias: 'Vekking: på alarmtid (lyd)'
   description: ''
   trigger:
-  - platform: time
-    at: input_datetime.vekking
+  - platform: template
+    value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) == (state_attr(''input_datetime.vekking'',
+      ''timestamp'') + state_attr(''input_datetime.wakeup_music_delay'',''timestamp''))
+      | timestamp_custom(''%H:%M'', false)}}'
   condition:
   - condition: and
     conditions:
@@ -237,7 +239,8 @@
   trigger:
   - platform: template
     value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) == (state_attr(''input_datetime.vekking'',
-      ''timestamp'') + (15*60)) | timestamp_custom(''%H:%M'', false)}}'
+      ''timestamp'') + state_attr(''input_datetime.wakeup_lightfade_delay'', ''timestamp'')
+      + (15*60)) | timestamp_custom(''%H:%M'', false)}}'
   condition:
   - condition: and
     conditions:
@@ -284,7 +287,8 @@
   trigger:
   - platform: template
     value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) == (state_attr(''input_datetime.vekking'',
-      ''timestamp'') + (20*60)) | timestamp_custom(''%H:%M'', false)}}'
+      ''timestamp'') + state_attr(''input_datetime.wakeup_music_delay'',''timestamp'')
+      + (20*60)) | timestamp_custom(''%H:%M'', false)}}'
   condition:
   - condition: state
     entity_id: input_boolean.vekking_pagar
@@ -306,7 +310,8 @@
   trigger:
   - platform: template
     value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) == (state_attr(''input_datetime.vekking'',
-      ''timestamp'') + (30*60)) | timestamp_custom(''%H:%M'', false)}}'
+      ''timestamp'') + state_attr(''input_datetime.wakeup_music_delay'',''timestamp'')
+      + (30*60)) | timestamp_custom(''%H:%M'', false)}}'
   condition:
   - condition: state
     entity_id: input_boolean.vekking_pagar
