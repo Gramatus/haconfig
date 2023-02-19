@@ -124,8 +124,24 @@ description: Set HVAC night settings, lower blinds and turn off lights after one
     log.info("Done")
 
 @service
-def test_hvac_temp():
-    climate.set_temperature(entity_id="climate.soverom",temperature=input_number.temperatur_soverom_natt)
+def test_check_volume():
+    # Check that volume is not too silent (e.g. after a crash when volume was just set to 0)
+    try:
+        log.info("Checking current volume")
+        volume = state.get("media_player.godehol.volume_level")
+        if volume >= 0.5:
+            log.info("Volume is: " + str(volume) + ", no need to do anything")
+        else:
+            log.info("Volume seems to be too low (" + str(volume) + "), increasing volume to 50 %")
+            log.info("Setting volume to 90 %")
+            volume_increase(30, "media_player.godehol", final_volume = 0.5)
+    except:
+        log.warning("Could not get volume")
+    # climate.set_temperature(entity_id="climate.soverom",temperature=input_number.temperatur_soverom_natt)
+    if state.get("input_boolean.ac_morning_activate") == "on":
+        log.info("Skrudd på")
+    else:
+        log.info("Skrudd av")
 
 @service
 def test_wifi_off():
@@ -202,6 +218,7 @@ name: Ensure that the alarm actually started as expected
             need_to_check_alarm = False
             break
         asyncio.sleep(check_interval)
+        # Check that music is playing
         target_device = "media_player.godehol"
         alarm_start = state.getattr("input_datetime.vekking")["timestamp"]
         midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone()
@@ -213,6 +230,18 @@ name: Ensure that the alarm actually started as expected
         if cast_playback_active and spotify_playback_active:
             log.info("Confirmed alarm is at expected state")
             need_to_check_alarm = False
+            # Check that volume is not too silent (e.g. after a crash when volume was just set to 0)
+            try:
+                log.info("Checking current volume")
+                volume = state.get("media_player.godehol.volume_level")
+                if volume >= 0.5:
+                    log.info("Volume is: " + str(volume) + " no need to do anything")
+                else:
+                    log.info("Volume seems to be too low (" + str(volume) + "), increasing volume to 50 %")
+                    log.info("Setting volume to 90 %")
+                    volume_increase(30, "media_player.godehol", final_volume = 0.5)
+            except:
+                log.info("Could not get volume")
             break
         minutes_since_wakeup = round(time_since_wakeup/60, 1)
         # ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()
