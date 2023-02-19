@@ -48,7 +48,8 @@ fields:
     trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
     trigger = re.compile("(<Event hue_event\[L\]:)([^>]*)(>)").sub('{\g<2>}',trigger)
     trigger = trigger.replace("'","\"")
-    #log.info(trigger)
+    trigger = trigger.replace("None","null")
+    # log.info(trigger)
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
     #log.info(trigger_data)
