@@ -101,6 +101,9 @@ logger:
     homeassistant.components.automation.lysfade_fange_opp_at_lyset_blir_skrudd_av: warning
     homeassistant.components.automation.home_away_leave_home: warning
     homeassistant.components.automation.home_away_come_home: warning
+    homeassistant.components.automation.lysfade_hoved_neste_fade: warning
+    homeassistant.components.automation.lysfade_hoved_start_ny_gruppe: warning
+    homeassistant.components.automation.lysfade_faste_lys_neste_fade: warning
     homeassistant.components.automation.lysfade_faste_lys_start_ny_gruppe: warning
     gql.transport.websockets: warning
     homeassistant.loader: warning

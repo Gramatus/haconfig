@@ -307,16 +307,16 @@ description: Set the endtime for the wakeup transition if the alarm time changes
     midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone()
     seconds_since_midnight = (datetime.datetime.now().astimezone() - midnight).total_seconds()
     if seconds_since_midnight > (60*60)-30 and seconds_since_midnight < (60*60)+30:
-        log.info("Currently at the exact moment when fade trigger times are set, waiting 60 seconds until that has finished")
+        log.info("Ensure wakeup transition time: Currently at the exact moment when fade trigger times are set, waiting 60 seconds until that has finished")
         task.sleep(60)
         seconds_since_midnight = (datetime.datetime.now().astimezone() - midnight).total_seconds()
     wakeup_time = state.getattr("input_datetime.vekking")["timestamp"]
     if seconds_since_midnight > (60*60) and seconds_since_midnight < wakeup_time:
-        log.info("We are now between 1AM and wakeup time, should reset fade trigger times")
+        log.info("Ensure wakeup transition time: We are now between 1AM and wakeup time, should reset fade trigger times")
         pyscript.set_trans_start_time(transition_group="Hoved")
         pyscript.set_trans_start_time(transition_group="Faste lys")
     else:
-        log.info("All good")
+        log.info("Ensure wakeup transition time: All good")
     return
     # Code below not needed anymore
     wakeup_time = state.getattr("input_datetime.vekking")["timestamp"]
