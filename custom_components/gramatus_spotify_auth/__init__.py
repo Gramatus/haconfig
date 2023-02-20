@@ -63,13 +63,13 @@ def setup(hass: ha_core.HomeAssistant, config: collections.OrderedDict) -> bool:
 
     async def reset_token(call: ha_core.ServiceCall):
         """service called."""
-        _LOGGER.info("Reloading token if needed")
+        _LOGGER.debug("Reloading token if needed")
         if not hass.data[DOMAIN]["session"].valid_token:
             _LOGGER.info("Reloading token")
             await hass.data[DOMAIN]["session"].async_ensure_token_valid()
         else:
             _LOGGER.info("Token is still valid")
-        _LOGGER.info("New expiry for token: " + str(hass.data[DOMAIN]["session"].token["expires_at"]) + ", token: " + hass.data[DOMAIN]["session"].token["access_token"])
+        _LOGGER.debug("New expiry for token: " + str(hass.data[DOMAIN]["session"].token["expires_at"]) + ", token: " + hass.data[DOMAIN]["session"].token["access_token"])
 
     # async def get_token(call: ha_core.ServiceCall):
     #     """service called."""

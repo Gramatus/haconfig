@@ -84,13 +84,15 @@ logger:
     pychromecast: info
     # My pyscripts
     hue_tools: debug
-    fully_actions: debug
+    fully_actions: info
     spotify_play: info
     spotify_services: info
     # custom_components.pyscript.scripts.hue_trans_tools: debug
     # hue_trans_tools: debug
     # Disable info logging from automations running all the time (that usually also has custom logging from my scripts if needed)
     homeassistant.components.automation.termostat_kontoret: warning
+    homeassistant.components.automation.termostat_kjokkenet: warning
+    homeassistant.components.automation.termostat_stua: warning
     homeassistant.components.automation.vekking_sikre_lysfade_pa_riktig_tidspunkt: warning
     homeassistant.components.automation.lysfade_sikre_tid_fra_vekking_til_arbeidslys: warning
     homeassistant.components.automation.fjernkontroll_reagere_pa_knapp: warning
@@ -99,7 +101,9 @@ logger:
     homeassistant.components.automation.lysfade_fange_opp_at_lyset_blir_skrudd_av: warning
     homeassistant.components.automation.home_away_leave_home: warning
     homeassistant.components.automation.home_away_come_home: warning
+    homeassistant.components.automation.lysfade_faste_lys_start_ny_gruppe: warning
     gql.transport.websockets: warning
+    homeassistant.loader: warning
   filters:
     # Closing connection to hue bridge<
     aiohue.v1[192.168.50.52]:
@@ -117,6 +121,9 @@ logger:
     homeassistant.components.automation:
       - ": Restarting"
       - ": Running automation actions"
+    homeassistant.helpers.script.websocket_api_script:
+      - "websocket_api script: Running websocket_api script"
+      - "websocket_api script: Executing step call service"
     # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
     # Login from localhost is probably nabu casa
     #homeassistant.components.http.ban:

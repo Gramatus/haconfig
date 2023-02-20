@@ -366,7 +366,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
             else:
                 if trackdata["name"] in played_tracks_name:
                     _LOGGER.warning("No match in DB, but DB has track with same name: " + trackdata["uri"]+" / " + trackdata["name"])
-                    _LOGGER.info(played_tracks_name[track["name"]])
+                    # _LOGGER.info(played_tracks_name[track["name"]])
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)
             if trackdata["last_played"].timestamp() < 25*365*24*60*60:
                 trackdata["last_played"] = datetime.datetime.fromtimestamp(0)

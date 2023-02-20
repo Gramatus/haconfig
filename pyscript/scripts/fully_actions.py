@@ -321,6 +321,6 @@ async def fully_action(ip,action,params=""):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(encoded_url, allow_redirects=False) as response:
-                _LOGGER.debug("Response from fully: Status " + str(response.status) + ", reply: " + response.text())
+                _LOGGER.info("Response from fully: Status " + str(response.status) + ", reply: " + response.text())
     except Exception as e:
         _LOGGER.error("Failed to connect to Fully, error: " + str(e))
