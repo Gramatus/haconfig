@@ -111,7 +111,11 @@ fields:
         log.info("Turning on/off Anlegg kjøkken")
         remote.send_command(entity_id="remote.harmony_hub_gangen", device="JVC Mini System", command="PowerToggle")
     elif action == "Anlegg bad av/på":
-        device_on = state.get("input_boolean.status_anlegg_bad") == "on"
+        device_state = state.get("input_boolean.status_anlegg_bad")
+        if (datetime.datetime.now().astimezone() - device_state.last_changed).total_seconds() < 5:
+            log.info("Anlegg bad changed state in the last 5 seconds, will not do anything")
+            return
+        device_on = device_state == "on"
         if device_on:
             log.info("Turning off Anlegg bad")
             remote.send_command(entity_id="remote.harmony_hub_gangen", device="Yamaha AV Receiver", command="PowerOff")
