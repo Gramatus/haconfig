@@ -121,10 +121,13 @@
     - condition: state
       entity_id: media_player.spotify_gramatus
       state: playing
-  - condition: time
-    after: input_datetime.vekking
+  - condition: template
+    value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) > (state_attr(''input_datetime.vekking'',
+      ''timestamp'') + state_attr(''input_datetime.wakeup_music_delay'',''timestamp''))
+      | timestamp_custom(''%H:%M'', false)}}'
   action:
   - service: pyscript.wakeup_alarm
+    data: {}
   mode: restart
 - id: '1631378585687'
   alias: 'Lysfade: Hoved - neste fade'
@@ -351,17 +354,20 @@
       transition_group: Faste lys
   mode: restart
 - id: '1632041943235'
-  alias: 'Vekking: på alarmtid (alltid)'
+  alias: 'Vekking: på lysalarmtid (alltid)'
   description: ''
   trigger:
-  - platform: time
-    at: input_datetime.vekking
+  - platform: template
+    value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) == (state_attr(''input_datetime.vekking'',
+      ''timestamp'') + state_attr(''input_datetime.wakeup_lightfade_delay'',''timestamp''))
+      | timestamp_custom(''%H:%M'', false)}}'
   condition:
   - condition: state
     entity_id: input_boolean.alarm_aktiv
     state: 'on'
   action:
   - service: pyscript.wakeup_fully
+    data: {}
   mode: restart
 - id: '1632042306713'
   alias: 'Fjernkontroll: Reagere på knapp'
