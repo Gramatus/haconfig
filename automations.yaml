@@ -90,6 +90,9 @@
     - condition: state
       entity_id: input_boolean.alarm_aktiv
       state: 'on'
+    - condition: state
+      entity_id: input_boolean.vekking_pagar
+      state: 'on'
   action:
   - service: pyscript.wakeup_alarm
     data: {}
