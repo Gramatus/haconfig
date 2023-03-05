@@ -157,6 +157,8 @@ async def start_morning():
 name: Start morning routine
 description: Finish things in bedroom and prepare downstairs
 """
+    log.info("Changing wakeup active to off")
+    input_boolean.turn_off(entity_id="input_boolean.vekking_pagar")
     log.info("Dismissing backup alarm")
     pyscript.fully_dismiss_alarm(device="fully.nettbrett1")
     if state.get("input_boolean.ac_morning_activate") == "on":
@@ -166,8 +168,6 @@ description: Finish things in bedroom and prepare downstairs
         climate.set_temperature(entity_id="climate.soverom",temperature=16)
     log.info("Turning off lights with a 120 second transition")
     light.turn_off(entity_id="light.soverom", transition=120)
-    log.info("Changing wakeup active to off")
-    input_boolean.turn_off(entity_id="input_boolean.vekking_pagar")
     log.info("Wait 30 seconds before turning off the sound")
     await asyncio.sleep(30)
     log.info("Turning off the sound")
