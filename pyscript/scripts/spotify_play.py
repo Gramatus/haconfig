@@ -82,6 +82,7 @@ fields:
     if ":" in playlistid:
         spotify_uri = playlistid
     spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
+    # return
     source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
         # log.debug("  - Getting ID for the related shuffled shadow playlist")
