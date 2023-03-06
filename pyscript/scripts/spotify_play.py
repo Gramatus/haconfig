@@ -77,7 +77,6 @@ fields:
     if device == None:
         device = "media_player.godehol"
     player_attr = state.getattr(device)
-    log.info("  - Connecting to " + player_attr["friendly_name"] + " on spotcast with volume set to 0")
     spotify_uri = "spotify:playlist:" + playlistid
     if ":" in playlistid:
         spotify_uri = playlistid
