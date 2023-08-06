@@ -448,3 +448,22 @@ def update_played_tracks_list():
         items = spotify_services.spotify_get("/tracks?ids=" + track_ids)
         for item in items:
             database_services.update_played_tracks_data(item)
+
+state.persist("pyscript.playing_track", "")
+
+@state_trigger("media_player.spotify_gramatus.media_track")
+def media_logger_2(value, old_value, var_name):
+    data = state.getattr("media_player.spotify_gramatus")
+    uri = ""
+    if "media_content_id" in data:
+        uri = data["media_content_id"]
+    previous_track = state.get("pyscript.playing_track")
+    state.set("pyscript.playing_track", uri)
+    if(value!="playing" or value!=old_value):
+        log.info("Skipping")
+        return
+    track_id = previous_track.split("spotify:track:",1)[1]
+    json = spotify_services.spotify_get("/tracks/"+track_id, True, ReturnRaw=True)
+    data["track"] = json
+    data["played_at"] = datetime.utcnow()
+    database_services.log_played_track(data)
