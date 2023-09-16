@@ -81,7 +81,14 @@ fields:
     spotify_uri = "spotify:playlist:" + playlistid
     if ":" in playlistid:
         spotify_uri = playlistid
-    spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
+    use_spotcast = state.get("input_boolean.use_spotcast") == "on"
+    log.info("Using spotcast: " + str(use_spotcast))
+    mass_device = device.replace("media_player.","media_player.mass_")
+    if use_spotcast:
+        spotcast.start(entity_id=device, uri=spotify_uri, start_volume=0)
+    else:
+        media_player.volume_set(entity_id=mass_device, volume_level=0)
+        media_player.play_media(entity_id=mass_device, media_content_id=spotify_uri, media_content_type="music")
     source_playlistid = playlistid
     if shuffle and shuffle_type == "Reuse shadow playlist":
         # log.debug("  - Getting ID for the related shuffled shadow playlist")
@@ -94,13 +101,14 @@ fields:
         input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + source_playlistid)
         playlistid = spotify_services.ensure_shuffled_playlist(source_playlistid)
         input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
-    # Stuff fails if the connection is not ready (i.e. Spotify is not aware of an active playback device)
-    log.debug("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
-    await asyncio.sleep(delay_seconds_start_spotcast)
-    log.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
-    pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
-    log.debug("  - Waiting " + str(delay_seconds) + " more seconds")
-    await asyncio.sleep(delay_seconds)
+    if use_spotcast:
+        # Stuff fails if the connection is not ready (i.e. Spotify is not aware of an active playback device)
+        log.debug("  > Waiting " + str(delay_seconds_start_spotcast) + " seconds for connection to be ready")
+        await asyncio.sleep(delay_seconds_start_spotcast)
+        log.info("  - Playing playlist on spotify: \"" + playlistid + "\"")
+        pyscript.play_playlist_at_position(playlistid=playlistid, position=1, shuffle=False) # Since we use shadow playlists for shuffling, we don't want another shuffle on top of our existing shuffle
+        log.debug("  - Waiting " + str(delay_seconds) + " more seconds")
+        await asyncio.sleep(delay_seconds)
     log.info(" - Starting volume increase over " + str(fadein_seconds) + " seconds")
     pyscript.volume_increase(fadein_seconds=fadein_seconds, device=device, initial_volume = 0.0, final_volume = final_volume)
 
