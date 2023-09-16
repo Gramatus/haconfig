@@ -108,9 +108,42 @@ fields:
                 log.info("Skipping to next track on " + playingEntity)
                 media_player.media_next_track(entity_id=playingEntity)
     elif action == "Anlegg kjøkken av/på":
-        log.info("Turning on/off Anlegg kjøkken")
-        remote.send_command(entity_id="remote.harmony_hub_gangen", device="JVC Mini System", command="PowerToggle")
+        turnonoff_receiver("Anlegg kjøkken")
     elif action == "Anlegg bad av/på":
+        turnonoff_receiver("Anlegg bad")
+    elif action == "Anlegg stue av/på":
+        turnonoff_receiver("Anlegg stue")
+    elif action == "Anlegg soverom av/på":
+        turnonoff_receiver("Anlegg soverom")
+    else:
+        log-warning("Received action \"" + action + "\", but no way to handle the action has been defined")
+
+@service
+def turnonoff_receiver(receiver):
+    """yaml
+name: Toggle receiever on/off
+fields:
+    receiver:
+        description: Receiver to toggle on/off
+        required: true
+        example: Anlegg soverom
+        selector:
+            select:
+                options:
+                    - "Anlegg kjøkken"
+                    - "Anlegg bad"
+                    - "Anlegg stue"
+                    - "Anlegg soverom"
+"""
+    if receiver=="Anlegg kjøkken":
+        log.info("Turning on/off Anlegg kjøkken")
+        device_state = state.get("input_boolean.status_anlegg_kjokken")
+        remote.send_command(entity_id="remote.harmony_hub_gangen", device="JVC Mini System", command="PowerToggle")
+        if device_state == "on":
+            input_boolean.turn_off(entity_id="input_boolean.status_anlegg_kjokken")
+        else:
+            input_boolean.turn_on(entity_id="input_boolean.status_anlegg_kjokken")
+    elif receiver=="Anlegg bad":
         device_state = state.get("input_boolean.status_anlegg_bad")
         if (datetime.datetime.now().astimezone() - device_state.last_changed).total_seconds() < 5:
             log.info("Anlegg bad changed state in the last 5 seconds, will not do anything")
@@ -124,7 +157,7 @@ fields:
             log.info("Turning on Anlegg bad")
             remote.send_command(entity_id="remote.harmony_hub_gangen", device="Yamaha AV Receiver", command="PowerOn")
             input_boolean.turn_on(entity_id="input_boolean.status_anlegg_bad")
-    elif action == "Anlegg stue av/på":
+    elif receiver == "Anlegg stue":
         if (datetime.datetime.now().astimezone() - state.get("light.hue_smart_plug_1.last_changed")).total_seconds() < 5:
             log.info("Anlegg stue changed state in the last 5 seconds, will not do anything")
             return
@@ -143,10 +176,14 @@ fields:
             log.info("Waiting 10 seconds for other stuff to turn on before turning on the screen, this avoids some useless flickering")
             task.sleep(10)
             remote.send_command(entity_id="remote.harmony_hub_stua", device="Dantax TV DVD", command="PowerToggle")
-    elif action == "Anlegg soverom av/på":
-        log.info("TODO: Trigger action \"" + action + "\"...")
-    else:
-        log-warning("Received action \"" + action + "\", but no way to handle the action has been defined")
+    elif receiver == "Anlegg soverom":
+        device_on = state.get("remote.harmony_hub_soverom") == "on"
+        if device_on:
+            log.info("Turning off Anlegg soverom")
+            remote.turn_off(entity_id="remote.harmony_hub_soverom")
+        else:
+            log.info("Turning on Anlegg soverom")
+            remote.turn_on(entity_id="remote.harmony_hub_soverom",activity="Listen to Music")
 
 @service
 def getPlayingEntity():
