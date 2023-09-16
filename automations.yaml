@@ -122,7 +122,7 @@
   - condition: not
     conditions:
     - condition: state
-      entity_id: media_player.spotify_gramatus
+      entity_id: media_player.soverom
       state: playing
   - condition: template
     value_template: '{{ now().timestamp() | timestamp_custom(''%H:%M'', true) > (state_attr(''input_datetime.vekking'',
