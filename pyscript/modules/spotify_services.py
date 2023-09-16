@@ -1,5 +1,4 @@
 import logging
-import spotify_token as st
 import time
 import datetime
 from yarl import URL
@@ -77,7 +76,7 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token
     }
-    
+
     items = []
     async with aiohttp.ClientSession() as session:
         has_more_data = True
@@ -254,7 +253,7 @@ def skip_track():
     data = spotify_get("/me/player/currently-playing", ReturnRaw=True)
     progress_ms = data["progress_ms"]
     data["track"] = data["item"]
-    data["played_at"] = datetime.datetime.utcnow();
+    data["played_at"] = datetime.datetime.utcnow()
     database_services.add_skipped_track(data)
     _LOGGER.debug("Skipping to next track on media_player.spotify_gramatus")
     media_player.media_next_track(entity_id="media_player.spotify_gramatus")
@@ -286,7 +285,7 @@ def fix_repeat_artist_album(sorted_tracks, lowest_last_played_datetime, logResul
                 # Increase the move time if we are on subsequent passes (to increase the likelihood of "fixing" stuff), this number will be approximately
                 # log4: 1.4 -> 1.6 -> 1.9 -> 2.2 -> 2.5 -> 2.8 -> 3.2 -> 3.5 -> 3.9 -> 4.3 -> 4.7
                 # log5: 1.5 -> 1.8 -> 2.2 -> 2.6 -> 3.0 -> 3.4 -> 3.9 -> 4.4 -> 4.9 -> 5.5 -> 6.0
-                # In windows calc graph mode: 1+0,1(floor(𝑥))^2/(ln(floor(𝑥)+1)/ln(5))^2 
+                # In windows calc graph mode: 1+0,1(floor(𝑥))^2/(ln(floor(𝑥)+1)/ln(5))^2
                 pass_offset = 1 + 0.1 * i**2 / math.log(i+2,5)**2
                 move_secs = int(rand_range * pass_offset)
                 if logResult:
@@ -378,6 +377,9 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
     # _LOGGER.info("Done")
     # return
 
+    # # Uncomment to log each track
+    # for track in sorted_tracks:
+    #     _LOGGER.info(track["name"] + ": last played " + str(track["last_played"]))
     # For tracks that haven't been played before, add a last_played value so things gets a bit more sorted. Before doing that, do a simple shuffle on the list to add some seed into "added order" stuff
     random.shuffle(sorted_tracks)
     day_offset = 1
@@ -408,7 +410,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
     # return
 
     sorted_tracks = sorted(sorted_tracks, key=lambda i:i["last_played"], reverse=False)
-    report_sort_data = False
+    # report_sort_data = False
     # if report_sort_data:
     #     result_list = []
     #     order = 1
@@ -427,6 +429,7 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
     #         playlistid: result_list
     #     })
     #     state.setattr("pyscript.playlist_sort_test." + playlistid, result_list)
+
     # Split into lists, based on the most recently played and the least recently played
     group_size = 50
     if len(sorted_tracks) > 200:
