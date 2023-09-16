@@ -127,6 +127,8 @@ logger:
     homeassistant.helpers.script.websocket_api_script:
       - "websocket_api script: Running websocket_api script"
       - "websocket_api script: Executing step call service"
+    roborock.code_mappings:
+      - "Missing .* - defaulting to "
     # Invalid logins shows up without acutally there being a problem. Remove from log if we have sufficient reason to believe this is an error.
     # Login from localhost is probably nabu casa
     #homeassistant.components.http.ban:
