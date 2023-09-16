@@ -236,7 +236,16 @@ name: Ensure that the alarm actually started as expected
             target_device = "media_player.soverom"
         cast_playback_active = state.get(target_device) == "playing"
         spotify_playback_active = state.get("media_player.spotify_gramatus") == "playing"
-        if cast_playback_active and spotify_playback_active:
+
+        mass_device = target_device.replace("media_player.","media_player.mass_")
+        mass_playback_active = state.get(mass_device) == "playing"
+        log.info("Status of " + mass_device + " is " + str(mass_playback_active) + ", that is " + state.get(mass_device))
+        if not mass_playback_active:
+            asyncio.sleep(5) # This sometimes fails, but it should be back in a few seconds
+            mass_playback_active = state.get(mass_device) == "playing"
+            log.info("Status of " + mass_device + " after 5 more seconds is " + str(mass_playback_active) + ", that is " + state.get(mass_device))
+
+        if mass_playback_active or (cast_playback_active and spotify_playback_active):
             log.info("Confirmed alarm is at expected state")
             need_to_check_alarm = False
             # Check that volume is not too silent (e.g. after a crash when volume was just set to 0)
