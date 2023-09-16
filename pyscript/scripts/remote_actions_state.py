@@ -175,7 +175,7 @@ state.persist("pyscript.remote_mapping","", {
     "7": {
         "roku_instance": "Home Assistant 2",
         "roku_command": "Rev",
-        "action": "Spill 90's Country"
+        "action": "Spill 90s Country"
     },
     "8": {
         "roku_instance": "Home Assistant 2",

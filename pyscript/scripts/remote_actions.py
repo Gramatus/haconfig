@@ -52,7 +52,7 @@ fields:
         pyscript.play_playlist_random(playlistid="2VJTrnLKqMyKZnnPXh3Ttt", shuffle_type=shuffle_type)
     elif action == "Spill Jazz Guitar":
         pyscript.play_playlist_random(playlistid="5xddIVAtLrZKtt4YGLM1SQ", shuffle_type=shuffle_type)
-    elif action == "Spill 90's Country":
+    elif action == "Spill 90s Country":
         pyscript.play_playlist_random(playlistid="37i9dQZF1DWVpjAJGB70vU", shuffle_type=shuffle_type)
     elif action == "Spill Visefavoritter":
         pyscript.play_playlist_random(playlistid="58TtpzdDAFoFkdTHXbx2ak", shuffle_type=shuffle_type)

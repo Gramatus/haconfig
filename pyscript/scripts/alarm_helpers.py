@@ -7,7 +7,12 @@ playlist_mapping = {
     "Våkneliste": "3FVKcokzHla6424Cj74LzL",
     "Lovsang": "0dUdJSf4v753IJwv8xDThH",
     "Alle gromlåter": "2pjB7wGkkoG9VYY8enMR5b",
-    "90's Country": "37i9dQZF1DWVpjAJGB70vU",
+    "90s Country": "37i9dQZF1DWVpjAJGB70vU",
+    "2000s Country": "37i9dQZF1DXdxUH6sNtcDe",
+    "2010s Country": "37i9dQZF1DWXdiK4WAVRUW",
+    "Bluesfavoritter": "0C2U8SFwZ3Y9bBjVa2KSMx",
+    "Visefavoritter": "58TtpzdDAFoFkdTHXbx2ak",
+    "Weird Al Yankovic": "5jm7D4NpHmTlkKsjFsJyIx",
     "Classic Acoustic": "37i9dQZF1DX504r1DvyvxG",
     "Classical Sunday Morning": "5Gmlxl0elXRNLL0heTF8Wz",
     "Kristne gromlåter": "4dgE3OmDZxl5OOj5SSriWX"
@@ -301,7 +306,12 @@ fields:
                     - "Våkneliste"
                     - "Lovsang"
                     - "Alle gromlåter"
-                    - "90's Country"
+                    - "90s Country"
+                    - "2000s Country"
+                    - "2010s Country"
+                    - "Bluesfavoritter"
+                    - "Visefavoritter"
+                    - "Weird Al Yankovic"
                     - "Classic Acoustic"
                     - "Classical Sunday Morning"
 """
