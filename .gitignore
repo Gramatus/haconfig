@@ -7,7 +7,10 @@ secrets.git
 deps/
 python_scripts/
 tts/
-www/
+www/**/*
+!www/community
+!www/community/gramatus
+!www/community/gramatus/**/*.*
 .HA_VERSION
 harmony*.conf
 *.log
