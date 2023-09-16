@@ -309,9 +309,10 @@ fields:
     input_text.set_value(entity_id="input_text.shuffle_status", value="Shuffling: " + playlist)
     shuffleplaylistid = spotify_services.ensure_shuffled_playlist(playlistid)
     input_text.set_value(entity_id="input_text.shuffle_status", value="idle")
-    input_text.set_value(entity_id="input_text.vekking_spilleliste_id", value=shuffleplaylistid)
-    input_select.select_option(entity_id="input_select.vekking_valgt_spilleliste", option=playlist)
     log.info("Updated shuffle shadow playlist. Now setting selected playlist for wakeup to: \"" + playlist + "\" (original id: \"" + playlistid + "\", shuffle playlist id: \"" + shuffleplaylistid + "\")")
+    input_text.set_value(entity_id="input_text.vekking_spilleliste_id", value=shuffleplaylistid)
+    input_text.set_value(entity_id="input_text.vekking_spilleliste_navn", value=playlist)
+    # input_select.select_option(entity_id="input_select.vekking_valgt_spilleliste", option=playlist)
 
 @service
 def set_wakeup_trans():
