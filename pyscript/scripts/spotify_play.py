@@ -450,6 +450,7 @@ def update_played_tracks_list():
             database_services.update_played_tracks_data(item)
 
 state.persist("pyscript.playing_track", "")
+state.persist("pyscript.playing_track_mass", "")
 
 @state_trigger("media_player.spotify_gramatus.media_track")
 def media_logger_2(value, old_value, var_name):
@@ -467,3 +468,26 @@ def media_logger_2(value, old_value, var_name):
     data["track"] = json
     data["played_at"] = datetime.utcnow()
     database_services.log_played_track(data)
+
+@state_trigger("media_player.mass_godehol")
+def media_logger_3(value, old_value, var_name):
+    if(value=="off"):
+        log.info("Turned off, nulling previous track")
+        state.set("pyscript.playing_track_mass", "")
+    if(value!="playing"):
+        log.debug("Skipping")
+        return
+    data = state.getattr("media_player.mass_godehol")
+    uri = ""
+    if "media_content_id" in data:
+        uri = data["media_content_id"].replace("spotify://track/","spotify:track:")
+    previous_track = state.get("pyscript.playing_track_mass")
+    state.set("pyscript.playing_track_mass", uri)
+    if(not previous_track.startswith("spotify:track:")):
+        log.info("No previous track, value: " + previous_track)
+        return
+    track_id = previous_track.split("spotify:track:",1)[1]
+    json = spotify_services.spotify_get("/tracks/"+track_id, True, ReturnRaw=True)
+    data["track"] = json
+    data["played_at"] = datetime.utcnow()
+    database_services.log_played_track(data, True)

@@ -159,7 +159,7 @@ def add_played_tracks_list(items):
     finally:
         conn.close()
 
-def log_played_track(item):
+def log_played_track(item, log_to_played_tracks_list = False):
     conn = sqlite3.connect('home-assistant_v2.db')
     c = conn.cursor()
     try:
@@ -170,6 +170,9 @@ def log_played_track(item):
         if "artists" in item["track"]:
             artist = item["track"]["artists"][0]["name"]
         c.execute('INSERT INTO played_tracks_log VALUES(?, ?, ?, ?, ?, ?)', (item["track"]["uri"], item["track"]["name"], item["played_at"], album, artist, item["track"]["duration_ms"]))
+        if log_to_played_tracks_list:
+            # TEMP SOLUTION (might be permanent, but quick fix as of 5.9.23)
+            c.execute('INSERT INTO played_tracks_list VALUES(?, ?, ?, ?, ?, ?, ?)', (item["track"]["uri"], item["track"]["name"], item["played_at"], album, artist, item["track"]["duration_ms"], item["track"]["duration_ms"]))
         conn.commit()
     finally:
         conn.close()
