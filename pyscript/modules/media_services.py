@@ -12,6 +12,7 @@ def getPlayingEntity(lookfor="both"):
     for device in castDevices:
         castDict[device["name"]] = { "is_group": device["model_name"] == "Google Cast Group" }
     allMediaPlayers = []
+    massMediaPlayers = []
     for mediaPlayerName in state.names(domain="media_player"):
         player = state.getattr(mediaPlayerName)
         if "friendly_name" in player:
@@ -19,17 +20,28 @@ def getPlayingEntity(lookfor="both"):
             is_group = deviceName in castDict and castDict[deviceName]["is_group"]
             sort_key = "0" + deviceName if is_group else "1" + deviceName
             allMediaPlayers.append({ "entity_id": mediaPlayerName, "friendly_name": deviceName, "is_group": is_group, "sortKey": sort_key, "state": state.get(mediaPlayerName) })
+            if "mass_" in mediaPlayerName:
+                massMediaPlayers.append({ "entity_id": mediaPlayerName, "friendly_name": deviceName, "is_group": is_group, "sortKey": sort_key, "state": state.get(mediaPlayerName) })
         else:
             log.info(state.getattr(mediaPlayerName))
     allMediaPlayers = sorted(allMediaPlayers, key=lambda i:i["sortKey"], reverse=False)
     playingEntity = None
     pausedEntity = None
-    for mediaPlayer in allMediaPlayers:
+    # Look for MASS entities first
+    for mediaPlayer in massMediaPlayers:
         if mediaPlayer["state"] == "playing":
             playingEntity = mediaPlayer
             break
         elif mediaPlayer["state"] == "paused" and pausedEntity == None:
             pausedEntity = mediaPlayer
+    if playingEntity == None:
+        for mediaPlayer in allMediaPlayers:
+            if mediaPlayer["state"] == "playing":
+                playingEntity = mediaPlayer
+                break
+            elif mediaPlayer["state"] == "paused" and pausedEntity == None:
+                pausedEntity = mediaPlayer
+    # Look for other entities if no MASS entity was found playing
     if (lookfor=="both" or lookfor=="playing") and playingEntity is not None:
         _LOGGER.debug("Found playing entity: " + playingEntity["entity_id"])
         return playingEntity["entity_id"], playingEntity["state"]
