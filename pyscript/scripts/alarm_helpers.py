@@ -194,6 +194,14 @@ async def wakeup_alarm(device="media_player.godehol"):
     """yaml
 name: Run wakeup alarm routine
 description: Sounding the alarm
+fields:
+    device:
+        description: Media player (ChromeCast device) to play playlist on
+        required: false
+        example: media_player.spotify_gramatus
+        selector:
+            entity:
+                domain: media_player
 """
     log.info("Start: Wakeup routine")
     playlistID = state.get("input_text.vekking_spilleliste_id")
@@ -234,13 +242,12 @@ name: Ensure that the alarm actually started as expected
             # Check that volume is not too silent (e.g. after a crash when volume was just set to 0)
             try:
                 log.info("Checking current volume")
-                volume = state.get("media_player.godehol.volume_level")
+                volume = state.get(target_device+".volume_level")
                 if volume >= 0.5:
                     log.info("Volume is: " + str(volume) + " no need to do anything")
                 else:
                     log.info("Volume seems to be too low (" + str(volume) + "), increasing volume to 50 %")
-                    log.info("Setting volume to 90 %")
-                    volume_increase(30, "media_player.godehol", final_volume = 0.5)
+                    volume_increase(30, target_device, final_volume = 0.5)
             except:
                 log.info("Could not get volume")
             break
@@ -263,7 +270,7 @@ name: Ensure that the alarm actually started as expected
         else:
             # Change target media player to bedroom if Godehol does not work after 5 minutes
             if time_since_wakeup > 5*60:
-                log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to connect to " + target_device + ", in case the trouble is in the cast group and the rerunning wakeup routine")
+                log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to connect to " + target_device + ", in case the trouble is in the cast group and then rerunning wakeup routine")
             else:
                 log.warning("Alarm still not running as expected after " + str(minutes_since_wakeup) + " minutes, trying to rerun wakeup routine")
             pyscript.wakeup_alarm(device=target_device)
