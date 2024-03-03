@@ -18,6 +18,7 @@ harmony*.conf
 *.log.fault
 custom_components/hacs
 custom_components/pyscript/*
+custom_components/mass
 #custom_components/pyscript/*
 #!custom_components/pyscript/hue_test.py
 
