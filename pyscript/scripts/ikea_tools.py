@@ -69,15 +69,15 @@ fields:
 
 def handle_trigger_data(trigger):
     trigger = str(trigger)
-    trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\g<1>,\g<3>',trigger)
+    trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\\g<1>,\\g<3>',trigger)
     comma_replacement = ";;;"
-    for item in re.findall("\[[^]]*\]", trigger):
+    for item in re.findall("\\[[^]]*\\]", trigger):
         trigger = trigger.replace(item,item.replace(",", comma_replacement))
-    for item in re.findall("\([^)]*\)", trigger):
+    for item in re.findall("\\s[^)]*\\)", trigger):
         trigger = trigger.replace(item,item.replace(",", comma_replacement))
-    trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
+    trigger = re.compile("(\\s*)([^=\\s]*?)(=)([^,>]*)").sub('\\g<1>\"\\g<2>\":\"\\g<4>\"',trigger)
     trigger = trigger.replace(comma_replacement, ",")
-    trigger = re.compile("( <state)([^>]*)(>)").sub('{\g<2>}',trigger)
+    trigger = re.compile("( <state)([^>]*)(>)").sub('{\\g<2>}',trigger)
     trigger = trigger.replace("\":\"[","\": [")
     trigger = trigger.replace("]\",","],")
     trigger = trigger.replace("'","\"")

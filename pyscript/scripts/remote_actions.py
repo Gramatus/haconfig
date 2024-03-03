@@ -16,9 +16,9 @@ fields:
         required: true
 """
     # Convert the text version of the trigger data back to something we can load as a JSON object
-    trigger = re.compile("(\".*)(')([^\"]*)(')(\")").sub('\g<1>\\\"\g<3>\\\"\g<5>',trigger)
-    trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
-    trigger = re.compile("(<Event roku_command\[L\]:)([^>]*)(>)").sub('{\g<2>}',trigger)
+    trigger = re.compile("(\".*)(')([^\"]*)(')(\")").sub('\\g<1>\\\"\\g<3>\\\"\\g<5>',trigger)
+    trigger = re.compile("(\\s*)([^=\\s]*?)(=)([^,>]*)").sub('\\g<1>\"\\g<2>\":\"\\g<4>\"',trigger)
+    trigger = re.compile("(<Event roku_command\\[L\\]:)([^>]*)(>)").sub('{\\g<2>}',trigger)
     trigger = trigger.replace("'","\"")
     trigger = trigger.replace("None","null")
     # log.info(trigger)

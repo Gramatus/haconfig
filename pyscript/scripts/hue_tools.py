@@ -52,14 +52,14 @@ fields:
         description: Trigger data from an automation
         required: true
 """
-    #log.info(trigger)
+    # log.info("Original trigger: " + trigger)
     # Convert the text version of the trigger data back to something we can load as a JSON object
-    trigger = re.compile("(\".*)(')([^\"]*)(')(\")").sub('\g<1>\\\"\g<3>\\\"\g<5>',trigger)
-    trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
-    trigger = re.compile("(<Event hue_event\[L\]:)([^>]*)(>)").sub('{\g<2>}',trigger)
+    trigger = re.compile("(\".*)(')([^\"]*)(')(\")").sub('\\g<1>\\\"\\g<3>\\\"\\g<5>',trigger)
+    trigger = re.compile("(\\s*)([^=\\s]*?)(=)([^,>]*)").sub('\\g<1>\"\\g<2>\":\"\\g<4>\"',trigger)
+    trigger = re.compile("(<Event hue_event\\[L\\]:)([^>]*)(>)").sub('{\\g<2>}',trigger)
     trigger = trigger.replace("'","\"")
     trigger = trigger.replace("None","null")
-    # log.info(trigger)
+    # log.info("Cleaned trigger: " + trigger)
     # Load the JSON object and then get the event data
     trigger_data = json.loads(trigger)
     #log.info(trigger_data)

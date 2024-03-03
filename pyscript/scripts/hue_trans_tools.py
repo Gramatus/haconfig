@@ -249,7 +249,7 @@ fields:
     trans:
         description: Which transition to set as active
         required: true
-        example: 
+        example:
         selector:
             entity:
                 domain: pyscript
@@ -515,7 +515,7 @@ fields:
     room:
         description: Which room to toggle for
         required: true
-        example: 
+        example:
         selector:
             entity:
                 domain: pyscript
@@ -542,21 +542,22 @@ fields:
 """
     trigger = str(trigger)
     # log.info("Original trigger: " + trigger)
+    # log.info("Original trigger: " + trigger)
     # Remove info on scenes - we don't need it an thus I haven't worked on reformatting it to JSON
     trigger = re.compile("hue_scenes={[^}]*}, ").sub('',trigger)
     # Remove info on lights - we don't need it an thus I haven't worked on reformatting it to JSON
     trigger = re.compile("lights={[^}]*}, ").sub('',trigger)
     # Remove info on color modes - we don't need it an thus I haven't worked on reformatting it to JSON
-    trigger = re.compile("supported_color_modes=\[[^\]]*\], ").sub('',trigger)
-    trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\g<1>,\g<3>',trigger)
+    trigger = re.compile("supported_color_modes=\\[[^\\]]*\\], ").sub('',trigger)
+    trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\\g<1>,\\g<3>',trigger)
     comma_replacement = ";;;"
-    for item in re.findall("\[[^]]*\]", trigger):
+    for item in re.findall("\\[[^]]*\\]", trigger):
         trigger = trigger.replace(item,item.replace(",", comma_replacement))
-    for item in re.findall("\([^)]*\)", trigger):
+    for item in re.findall("\\s[^)]*\\)", trigger):
         trigger = trigger.replace(item,item.replace(",", comma_replacement))
-    trigger = re.compile("(\s*)([^=\s]*?)(=)([^,>]*)").sub('\g<1>\"\g<2>\":\"\g<4>\"',trigger)
+    trigger = re.compile("(\\s*)([^=\\s]*?)(=)([^,>]*)").sub('\\g<1>\"\\g<2>\":\"\\g<4>\"',trigger)
     trigger = trigger.replace(comma_replacement, ",")
-    trigger = re.compile("( <state)([^>]*)(>)").sub('{\g<2>}',trigger)
+    trigger = re.compile("( <state)([^>]*)(>)").sub('{\\g<2>}',trigger)
     trigger = trigger.replace("\":\"[","\": [")
     trigger = trigger.replace("]\",","],")
     trigger = trigger.replace("'","\"")
