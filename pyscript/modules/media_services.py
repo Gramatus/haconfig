@@ -13,12 +13,16 @@ def getPlayingEntity(lookfor="both"):
         castDict[device["name"]] = { "is_group": device["model_name"] == "Google Cast Group" }
     allMediaPlayers = []
     massMediaPlayers = []
+    use_spotcast = state.get("input_boolean.use_spotcast") == "on"
     for mediaPlayerName in state.names(domain="media_player"):
         player = state.getattr(mediaPlayerName)
         if "friendly_name" in player:
             deviceName = state.getattr(mediaPlayerName)["friendly_name"]
             is_group = deviceName in castDict and castDict[deviceName]["is_group"]
             sort_key = "0" + deviceName if is_group else "1" + deviceName
+            # use_spotcast
+            if use_spotcast and "mass_" in mediaPlayerName:
+                continue
             allMediaPlayers.append({ "entity_id": mediaPlayerName, "friendly_name": deviceName, "is_group": is_group, "sortKey": sort_key, "state": state.get(mediaPlayerName) })
             if "mass_" in mediaPlayerName:
                 massMediaPlayers.append({ "entity_id": mediaPlayerName, "friendly_name": deviceName, "is_group": is_group, "sortKey": sort_key, "state": state.get(mediaPlayerName) })
@@ -45,7 +49,7 @@ def getPlayingEntity(lookfor="both"):
     if (lookfor=="both" or lookfor=="playing") and playingEntity is not None:
         _LOGGER.debug("Found playing entity: " + playingEntity["entity_id"])
         return playingEntity["entity_id"], playingEntity["state"]
-    elif (lookfor=="both" or lookfor=="paused") and  pausedEntity is not None:
+    elif (lookfor=="both" or lookfor=="paused") and pausedEntity is not None:
         _LOGGER.debug("Found paused entity: " + pausedEntity["entity_id"])
         return pausedEntity["entity_id"], pausedEntity["state"]
     else:
