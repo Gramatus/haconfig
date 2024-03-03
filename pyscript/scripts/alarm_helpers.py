@@ -15,7 +15,9 @@ playlist_mapping = {
     "Weird Al Yankovic": "5jm7D4NpHmTlkKsjFsJyIx",
     "Classic Acoustic": "37i9dQZF1DX504r1DvyvxG",
     "Classical Sunday Morning": "5Gmlxl0elXRNLL0heTF8Wz",
-    "Kristne gromlåter": "4dgE3OmDZxl5OOj5SSriWX"
+    "Kristne gromlåter": "4dgE3OmDZxl5OOj5SSriWX",
+    "Morrablues": "7g4842hFcjAesA7p7rURFw",
+    "Funky Heavy Bluesy": "37i9dQZF1DX9stbPFTxeaB"
 }
 
 @service
