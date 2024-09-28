@@ -211,7 +211,10 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
                 light.turn_on(entity_id=light_entity, kelvin=new_kelvin, transition=fade_time)
             else:
                 log.debug("    # " + light_entity + ": fading to brightness " + str(new_bri))
-                light.turn_on(entity_id=light_entity, brightness=new_bri, transition=fade_time)
+                if(new_bri == None):
+                    log.warning("Missing new_bri")
+                else:
+                    light.turn_on(entity_id=light_entity, brightness=new_bri, transition=fade_time)
         if elapsed_time + fade_time < full_fade_time:
             wait_time = fade_time + 1 # Let there be a slight delay before the next run
             log.debug("  > " + room + ": Waiting " + str(wait_time) + " seconds before starting next step: #" + str(current_step + 1))
