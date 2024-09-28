@@ -203,9 +203,12 @@
   trigger:
   - platform: state
     entity_id: input_datetime.vekking
+  - platform: state
+    entity_id: input_datetime.wakeup_lightfade_delay
   condition: []
   action:
   - service: pyscript.set_wakeup_trans
+    data: {}
   mode: single
 - id: '1631457413397'
   alias: 'LysFade: Aktivere alarmer neste dag'
