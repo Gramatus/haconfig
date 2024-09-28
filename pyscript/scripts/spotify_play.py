@@ -331,7 +331,7 @@ name: Spotify test code
     # alt_token = state.getattr("media_player.spotify_gramatus")["media_content_id"]
     # log.info("Using alt token")
     # log.info(alt_token)
-    # token = spotipy.util.prompt_for_user_token(scope="user-library-read",client_id="3dc9201a071445aa9389f9ebff3367e4",client_secret="2ac13db545af4e62bfd0f1ca50a6a57b",redirect_uri="http://homeassistant.local:4430/spotipy")
+    # token = spotipy.util.prompt_for_user_token(scope="user-library-read",client_id="3dc9201a071445aa9389f9ebff3367e4",client_secret="...",redirect_uri="http://homeassistant.local:4430/spotipy")
     # _LOGGER.info(token)
 
 async def test_request():
