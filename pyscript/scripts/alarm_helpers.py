@@ -347,13 +347,3 @@ description: Set the endtime for the wakeup transition if the alarm time changes
     else:
         log.info("Ensure wakeup transition time: All good")
     return
-    # Code below not needed anymore
-    wakeup_time = state.getattr("input_datetime.vekking")["timestamp"]
-    data = state.getattr("pyscript.huetrans_hoved_vekking")
-    endtime_entity = data["endtime_entity"]
-    if not "." in endtime_entity:
-        endtime_entity = "input_datetime." + endtime_entity
-    # The wakeup transition runs for 60*60 seconds, but half is before wakeup and half after
-    wakeup_endtime = wakeup_time + 30*60
-    wakeup_endtime_str = str(datetime.timedelta(seconds=wakeup_endtime))
-    input_datetime.set_datetime(entity_id=endtime_entity, time=wakeup_endtime_str)
