@@ -490,6 +490,17 @@ state.persist(state_prefix+"_fastelys_kveld","off",{
 
 @service
 def update_room_entities():
+    remaining_attempts = 10
+    while remaining_attempts > 0:
+        try:
+            ha_startup = sensor.oppetid_ha
+            log.info("HA started at: " + str(ha_startup))
+        except:
+            log.info("sensor.oppetid_ha not found, waiting 10 seconds and retrying up to " + str(remaining_attempts) + " more times")
+            remaining_attempts -= 1
+            asyncio.sleep(10)
+            continue
+        break
     ha_uptime_seconds = datetime.datetime.now().timestamp() - datetime.datetime.strptime(state.get("sensor.oppetid_ha"), "%Y-%m-%dT%H:%M:%S%z").timestamp()
     if ha_uptime_seconds < 5*60:
         _LOGGER.info("Started to update room entities - waiting 30 seconds")
