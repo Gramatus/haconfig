@@ -159,9 +159,15 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
         # log.info("fade_time: "+ str(fade_time))
         for light_entity in data["lights"]:
             light_on = state.get(light_entity) == "on"
-            if not light_on and not force_run:
-                log.debug("    # " + light_entity + ": Light is not on, will not do anything.")
-                continue
+            if not light_on:
+                if not force_run:
+                    log.debug("    # " + light_entity + ": Light is not on, will not do anything.")
+                    continue
+                else:
+                    log.debug("    # " + light_entity + ": Light is not on. Will turn on and wait a bit to ensure attributes are set correctly.")
+                    light.turn_on(entity_id=light_entity, brightness_step=0) # See info above, used to be sure the light is "freed up" to receive new commands.
+                    turnon_wait_time=1000
+                    await asyncio.sleep(turnon_wait_time)
             light_attr = state.getattr(light_entity)
             current_bri = 0
             if "brightness" in light_attr:
@@ -169,7 +175,7 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
             current_kelvin = None
             if "color_temp" in light_attr:
                 current_kelvin = color_temperature_mired_to_kelvin(light_attr["color_temp"])
-            elif "rgb_color" in light_attr:
+            elif "rgb_color" in light_attr and light_attr["rgb_color"] != None:
                 match = rgb_to_kelvin_via_lookup(light_attr["rgb_color"][0], light_attr["rgb_color"][1], light_attr["rgb_color"][2], for_entity=light_entity)
                 if match != None:
                     current_kelvin = color_temperature_mired_to_kelvin(match["color_temp"])
@@ -179,10 +185,10 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
             if "hs_color" in light_attr:
                 hs_color = light_attr["hs_color"]
                 current_hue, current_sat = huesat_to_huehs(hs_color)
-            new_bri = None
+            new_bri = 10
             if current_bri != None:
                 new_bri = int(current_bri + ((final_bri - current_bri) * completed_level_after))
-            new_kelvin = None
+            new_kelvin = 2500
             if current_kelvin != None and final_kelvin != None:
                 new_kelvin = int(current_kelvin + ((final_kelvin - current_kelvin) * completed_level_after))
             new_hs = None
@@ -407,6 +413,9 @@ def color_temperature_kelvin_to_mired(kelvin_temperature: float) -> int:
 
 def color_temperature_mired_to_kelvin(mired_temperature: int) -> float:
     """Convert mired shift to degrees kelvin."""
+    if mired_temperature == None:
+        log.warning("Missing mired_temperature")
+        return 2500
     return math.floor(1000000 / mired_temperature)
 
 def hue_hs_to_huesat(HueColor: int, HueSaturation: Int) -> "list[int]":
@@ -419,6 +428,9 @@ def hue_hs_to_huesat(HueColor: int, HueSaturation: Int) -> "list[int]":
     return [hue, sat]
 
 def huesat_to_huehs(huesat: "list[int]") -> "tuple[int, int]":
+    if huesat == None:
+        log.warning("No huesat, setting to test values")
+        huesat = [1,1]
     HueColor = int((huesat[0] / 360) * 65535)
     HueSaturation = int((huesat[1] / 100) * 255)
     return HueColor, HueSaturation
