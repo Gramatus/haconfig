@@ -627,3 +627,22 @@
     type: set_hvac_mode
     hvac_mode: 'off'
   mode: single
+- id: '1720342343896'
+  alias: Start kjøling soverom 17:00
+  description: ''
+  trigger:
+  - platform: time
+    at: '17:00:00'
+  condition:
+  - condition: state
+    entity_id: climate.soverom
+    state: heat
+  action:
+  - service: climate.set_temperature
+    metadata: {}
+    data:
+      temperature: 16
+      hvac_mode: cool
+    target:
+      device_id: 5dd8331be1641f1686ee64dccae75491
+  mode: single
