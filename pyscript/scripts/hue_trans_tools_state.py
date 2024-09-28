@@ -184,7 +184,7 @@ ikea_scenes_vekking = [
 state.persist(state_prefix+"_hoved_vekking","off",{
     "friendly_name": "Fadeoppsett: Vekking",
     "device_class": "Fadeoppsett",
-    "icon": "mdi:table-settings",    
+    "icon": "mdi:table-settings",
     "endtime_entity": "sensor.template_huetrans_vekking_endtime_auto",
     "unique_id": entity_prefix+"_settings_vekking",
     "force_run": True,
@@ -244,6 +244,14 @@ state.persist(state_prefix+"_hoved_vekking","off",{
                 "light.kjokkenbenk_vindu",
                 "light.kjokken_oppa_skap",
                 "light.kjokken_hylle"
+            ],
+            "Scenes": ikea_scenes_vekking
+        },
+        {
+            "room": "light.kontor",
+            "lights": [
+                "light.kontor_hoyre",
+                "light.kontor_venstre"
             ],
             "Scenes": ikea_scenes_vekking
         }
