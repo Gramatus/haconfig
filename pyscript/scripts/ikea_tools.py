@@ -16,6 +16,7 @@ import re
 import math
 import database_services
 import inspect
+# import traceback
 
 room_prefix = "pyscript.transrooms_"
 
@@ -176,6 +177,7 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
             if "color_temp" in light_attr:
                 current_kelvin = color_temperature_mired_to_kelvin(light_attr["color_temp"])
             elif "rgb_color" in light_attr and light_attr["rgb_color"] != None:
+                log.info("RGB_COLOR: " + str(light_attr["rgb_color"]))
                 match = rgb_to_kelvin_via_lookup(light_attr["rgb_color"][0], light_attr["rgb_color"][1], light_attr["rgb_color"][2], for_entity=light_entity)
                 if match != None:
                     current_kelvin = color_temperature_mired_to_kelvin(match["color_temp"])
@@ -415,6 +417,7 @@ def color_temperature_mired_to_kelvin(mired_temperature: int) -> float:
     """Convert mired shift to degrees kelvin."""
     if mired_temperature == None:
         log.warning("Missing mired_temperature")
+        # traceback.print_stack()
         return 2500
     return math.floor(1000000 / mired_temperature)
 

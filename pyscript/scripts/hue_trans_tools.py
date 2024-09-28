@@ -116,8 +116,11 @@ def get_seconds_to_target(transition_group):
         endtime_entity = "input_datetime." + endtime_entity
 
     endtimevalue = state.get(endtime_entity)
+    # log.info("endtimevalue: "+str(endtimevalue))
     endtime = time.strptime(endtimevalue,"%H:%M:%S")
+    # log.info("endtime: "+str(endtime))
     target_time = now.replace(hour=endtime.tm_hour, minute=endtime.tm_min, second=endtime.tm_sec, microsecond=0)
+    # log.info("target_time: "+str(target_time))
     seconds_to_target = (target_time - now).total_seconds()
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
     seconds_to_target_from_midnight = (target_time - midnight).total_seconds()
@@ -235,7 +238,7 @@ fields:
                 next_trans_timestamp = starttime
     if next_trans != None:
         log.info("Neste fade med " + transition_group + " starter kl. " + next_trans["start_time"])
-        log.debug(next_trans)
+        log.info(next_trans)
         input_datetime.set_datetime(entity_id="input_datetime.lysfade_start_neste_" + transition_group + "fade",time=next_trans["start_time"])
     else:
         log.info("\"" + transition_group + "\": No more transitions scheduled for today, thus not setting a new start time for this group...")
