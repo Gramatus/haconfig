@@ -236,7 +236,7 @@ name: Ensure that the alarm actually started as expected
         asyncio.sleep(check_interval)
         # Check that music is playing
         target_device = "media_player.godehol"
-        alarm_start = state.getattr("input_datetime.vekking")["timestamp"]
+        alarm_start = state.getattr("input_datetime.vekking")["timestamp"] + state.getattr("input_datetime.wakeup_music_delay")["timestamp"]
         midnight = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone()
         time_since_wakeup = datetime.datetime.now().timestamp() - (alarm_start + midnight.timestamp())
         if time_since_wakeup > 5*60:
