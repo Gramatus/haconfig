@@ -301,6 +301,8 @@ fields:
         only_for_room_attr = state.getattr(only_for_room)
         if "entity_id" in only_for_room_attr:
             only_for_room = only_for_room_attr["entity_id"]
+            if isinstance(only_for_room, set):
+                only_for_room = next(iter(only_for_room))
         # If we are currently running a transition, don't run the "single room" action (it is probably triggered by the transition actually turning on the lights)
         if state.get("timer.lysfade_aktiv_trans_trigger_" + transition_group) == "active":
             log.debug("Skipping only_for_room run for: " + only_for_room)
@@ -545,32 +547,10 @@ fields:
 """
     trigger = str(trigger)
     # log.info("Original trigger: " + trigger)
-    # log.info("Original trigger: " + trigger)
-    # Remove info on scenes - we don't need it an thus I haven't worked on reformatting it to JSON
-    trigger = re.compile("hue_scenes={[^}]*}, ").sub('',trigger)
-    # Remove info on lights - we don't need it an thus I haven't worked on reformatting it to JSON
-    trigger = re.compile("lights={[^}]*}, ").sub('',trigger)
-    # Remove info on color modes - we don't need it an thus I haven't worked on reformatting it to JSON
-    trigger = re.compile("supported_color_modes=\\[[^\\]]*\\], ").sub('',trigger)
-    trigger = re.compile("(<state [^;]*)(;)([^>]*>)").sub('\\g<1>,\\g<3>',trigger)
-    comma_replacement = ";;;"
-    for item in re.findall("\\[[^]]*\\]", trigger):
-        trigger = trigger.replace(item,item.replace(",", comma_replacement))
-    for item in re.findall("\\s[^)]*\\)", trigger):
-        trigger = trigger.replace(item,item.replace(",", comma_replacement))
-    trigger = re.compile("(\\s*)([^=\\s]*?)(=)([^,>]*)").sub('\\g<1>\"\\g<2>\":\"\\g<4>\"',trigger)
-    trigger = trigger.replace(comma_replacement, ",")
-    trigger = re.compile("( <state)([^>]*)(>)").sub('{\\g<2>}',trigger)
-    trigger = trigger.replace("\":\"[","\": [")
-    trigger = trigger.replace("]\",","],")
-    trigger = trigger.replace("'","\"")
-    trigger = trigger.replace(" None"," null")
-    # log.info("Cleaned trigger: " + trigger)
-    # Load the JSON object and then get the event data
-    trigger_data = json.loads(trigger)
-    # log.info(trigger_data)
-    log.debug("Entity that triggered the automation: " + trigger_data["entity_id"])
-    trigger_transition_scene(transition_group="Hoved", only_for_room=trigger_data["entity_id"])
+    # Alternate approach as we really only need the entity_id
+    entity_id = str(re.search("'entity_id': ?'([^']*)", trigger).group(1))
+    log.debug("Entity that triggered the automation: " + entity_id)
+    trigger_transition_scene(transition_group="Hoved", only_for_room=entity_id)
 
 @service
 async def run_night_light(duration_mins):
