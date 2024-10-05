@@ -94,7 +94,10 @@ fields:
         playingEntity, playState = media_services.getPlayingEntity()
         if playingEntity is not None:
             log.info("Stopping " + playingEntity)
-            media_player.media_stop(entity_id=playingEntity)
+            if playingEntity == 'media_player.spotify_gramatus':
+                media_player.media_pause(entity_id=playingEntity)
+            else:
+                media_player.media_stop(entity_id=playingEntity)
     elif action == "Forrige på Spotify":
         playingEntity, playState = media_services.getPlayingEntity()
         if playingEntity is not None:
