@@ -208,7 +208,7 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
                 light.turn_on(entity_id=light_entity, hs_color=new_hs, transition=fade_time)
             elif change_color and new_kelvin != None:
                 log.debug("    # " + light_entity + ": fading to new color temperature " + str(new_kelvin) + "K")
-                light.turn_on(entity_id=light_entity, kelvin=new_kelvin, transition=fade_time)
+                light.turn_on(entity_id=light_entity, color_temp_kelvin=new_kelvin, transition=fade_time)
             else:
                 log.debug("    # " + light_entity + ": fading to brightness " + str(new_bri))
                 if(new_bri == None):
@@ -227,7 +227,7 @@ def trigger_for_room_if_active_ikea(dataset, room:str, elapsed_time:int=0, curre
 def ikea_test():
     current_trans = state.getattr("pyscript.huetrans_fastelys_dag")
     if "IKEA" in current_trans:
-        # light.turn_on(entity_id="light.kjokken_hylle", kelvin=2900, brightness=255)
+        # light.turn_on(entity_id="light.kjokken_hylle", color_temp_kelvin=2900, brightness=255)
         # pyscript.trigger_for_room_if_active_ikea(dataset=current_trans["IKEA"], room="light.gang_nede_vindu")
         # hs_to_kelvin()
         data = state.getattr("light.gang_nede_vindu")
