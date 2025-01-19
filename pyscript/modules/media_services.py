@@ -18,7 +18,7 @@ def getPlayingEntity(lookfor="both"):
         player = state.getattr(mediaPlayerName)
         if "friendly_name" in player:
             deviceName = state.getattr(mediaPlayerName)["friendly_name"]
-            is_group = deviceName in castDict and castDict[deviceName]["is_group"]
+            is_group = (deviceName in castDict and castDict[deviceName]["is_group"]) or deviceName == "Godehol"
             sort_key = "0" + deviceName if is_group else "1" + deviceName
             # use_spotcast
             if use_spotcast and "mass_" in mediaPlayerName:
