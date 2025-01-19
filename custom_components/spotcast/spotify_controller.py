@@ -125,7 +125,6 @@ class SpotifyController(BaseController):
             counter += 1
 
         if not self.is_launched:
-            self.logger.warning("Timeout when waiting for status response from Spotify app")
             raise LaunchError(
                 "Timeout when waiting for status response from Spotify app"
             )
