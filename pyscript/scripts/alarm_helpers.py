@@ -10,6 +10,7 @@ playlist_mapping = {
     "90s Country": "37i9dQZF1DWVpjAJGB70vU",
     "2000s Country": "37i9dQZF1DXdxUH6sNtcDe",
     "2010s Country": "37i9dQZF1DWXdiK4WAVRUW",
+    "Country": "48wmymsgKBACuyBee1jPlZ",
     "Bluesfavoritter": "0C2U8SFwZ3Y9bBjVa2KSMx",
     "Visefavoritter": "58TtpzdDAFoFkdTHXbx2ak",
     "Weird Al Yankovic": "5jm7D4NpHmTlkKsjFsJyIx",
@@ -17,7 +18,7 @@ playlist_mapping = {
     "Classical Sunday Morning": "5Gmlxl0elXRNLL0heTF8Wz",
     "Kristne gromlåter": "4dgE3OmDZxl5OOj5SSriWX",
     "Morrablues": "7g4842hFcjAesA7p7rURFw",
-    "Funky Heavy Bluesy": "37i9dQZF1DX9stbPFTxeaB"
+    "Funky Heavy Bluesy": "6iaecwgZCikFCBAQzJJdLI"
 }
 
 @service
@@ -166,8 +167,10 @@ description: Finish things in bedroom and prepare downstairs
 """
     log.info("Changing wakeup active to off")
     input_boolean.turn_off(entity_id="input_boolean.vekking_pagar")
+    await asyncio.sleep(5) # Wait 5 seconds to ensure the change is saved
     log.info("Dismissing backup alarm")
     pyscript.fully_dismiss_alarm(device="fully.nettbrett1")
+    await asyncio.sleep(5) # Wait 5 more seconds for good measure
     if state.get("input_boolean.ac_morning_activate") == "on":
         log.info("Turning back on HVAC with daytime settings")
         climate.turn_on(entity_id="climate.soverom")
