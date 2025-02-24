@@ -343,6 +343,9 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
         tracks = []
         for item in items:
             track = item["track"]
+            if not track["is_playable"]:
+                _LOGGER.info("Track is NOT playable: " + track["name"])
+                continue
             # if("Hubba" not in track["name"]):
             #     continue
             trackdata = {
