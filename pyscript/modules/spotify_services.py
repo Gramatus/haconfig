@@ -353,8 +353,9 @@ def update_shuffle_playlist(playlistid, shuffleplaylistid, consider_play_date=Tr
                 "album": track["album"]["name"],
                 "track_identifier": track["name"] + "|" + track["album"]["name"] + "|" + track["artists"][0]["name"]
             }
-            # _LOGGER.info(trackdata)
-            # _LOGGER.info(track)
+            if debug_log:
+                _LOGGER.info(trackdata)
+                _LOGGER.info(track)
             if "linked_from" in track:
                 trackdata["uri"] = track["linked_from"]["uri"]
             if trackdata["market_uri"] in played_tracks_uri:
