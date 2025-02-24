@@ -138,6 +138,7 @@ async def spotify_get(relative_url, dump_to_log=False, GetAll=True, MaxCount=100
                 else:
                     _LOGGER.debug("Reached end of paging")
                     has_more_data = False
+    items = list(filter(lambda x: x != None, items)) # Sometimes the API returns some nulls in the JSON list
     for item in items:
         if "track" in item and "available_markets" in item["track"]:
             item["track"]["available_markets"] = None
